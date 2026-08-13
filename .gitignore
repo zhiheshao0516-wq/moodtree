@@ -1,3 +1,61 @@
+# Dependencies
 node_modules/
+
+# Build output
+dist/
+
+# Secrets
+.jwt_secret
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Screenshots and temp images
+*.png
+
+# Deploy packages
+*.tar.gz
+*.zip
+deploy-package/
+deploy_edit_crop/
+
+# IDE
+.vscode/
+.idea/
+
+# OS files
 .DS_Store
-*.log
+Thumbs.db
+
+# Debug/backup files
+data_backup_*.json
+server_current.html
+
+# Old patch/fix scripts (development artifacts)
+patch_v*.py
+patch_v*.cjs
+fix_v*.py
+modify_*.py
+analyze_*.py
+repro_*.py
+verify_patch.cjs
+deploy_frontend.py
+deploy_patched.py
+patch_fix_v2.py
+patch_frontend_v341.py
+patch_simple.py
+patch_wechat_selection.py
+
+# Old src versions
+src/app_v1786329969*.js
+src/app_v1786351630*.js
+src/app_v1786354418*.js
+
+# Frame/keyframe dirs
+frames2/
+keyframes/
+keyframes_v3/
+
+# Chinese named debug files
+二轮测试审查报告.md

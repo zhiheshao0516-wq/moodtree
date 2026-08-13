@@ -289,3 +289,7 @@ fieldset { border:0; padding:0; margin:26px 0; }legend { font-size:12px; font-we
   .detail-cover img { height: 180px; }
   .diary-cover { height: 100px; }
 }
+
+.site-footer{text-align:center;padding:32px 16px 20px;font-size:11px;color:var(--muted);line-height:1.8;letter-spacing:.3px}
+.site-footer a{color:var(--sage-dark);text-decoration:none;border-bottom:1px solid transparent;transition:border-color .2s}
+.site-footer a:hover{border-color:var(--sage-dark)}
