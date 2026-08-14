@@ -59,3 +59,9 @@ keyframes_v3/
 
 # Chinese named debug files
 二轮测试审查报告.md
+
+# Deploy scripts with credentials
+scf/deploy_v325.py
+scf/deploy_v324.py
+scf/config_env.py
+scf/*.zip

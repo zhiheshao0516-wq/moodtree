@@ -351,7 +351,7 @@ def ai_chat(body):
         messages.extend(body['history'])
     else:
         messages.append({'role': 'user', 'content': body.get('message', '你好')})
-    req_data = json.dumps({'model': 'deepseek-chat', 'messages': messages, 'max_tokens': 500, 'temperature': 0.8}).encode('utf-8')
+    req_data = json.dumps({'model': 'deepseek-v4-pro', 'messages': messages, 'max_tokens': 500, 'temperature': 0.8}).encode('utf-8')
     req = urllib.request.Request('https://api.deepseek.com/v1/chat/completions', data=req_data, headers={'Content-Type': 'application/json', 'Authorization': f'Bearer {DEEPSEEK_API_KEY}'}, method='POST')
     try:
         resp = urllib.request.urlopen(req, timeout=25)
