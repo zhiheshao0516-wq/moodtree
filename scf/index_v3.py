@@ -5,12 +5,17 @@ tz_shanghai = datetime.timezone(datetime.timedelta(hours=8))
 def now_str(fmt='%Y-%m-%d %H:%M'):
     return datetime.datetime.now(tz_shanghai).strftime(fmt)
 
-SECRET_ID = os.environ.get('COS_SECRET_ID', '')
-SECRET_KEY = os.environ.get('COS_SECRET_KEY', '')
+SECRET_ID = os.environ.get('COS_SECRET_ID') or os.environ.get('SECRET_ID', '')
+SECRET_KEY = os.environ.get('COS_SECRET_KEY') or os.environ.get('SECRET_KEY', '')
 IMS_SECRET_ID = os.environ.get('IMS_SECRET_ID', '')
 IMS_SECRET_KEY = os.environ.get('IMS_SECRET_KEY', '')
 DEEPSEEK_API_KEY = os.environ.get('DEEPSEEK_API_KEY', '')
 JWT_SECRET = os.environ.get('JWT_SECRET', '')
+SMS_SECRET_ID = os.environ.get('SMS_SECRET_ID') or SECRET_ID
+SMS_SECRET_KEY = os.environ.get('SMS_SECRET_KEY') or SECRET_KEY
+SMS_SDK_APP_ID = os.environ.get('SMS_SDK_APP_ID', '')
+SMS_SIGN_NAME = os.environ.get('SMS_SIGN_NAME', '')
+SMS_TEMPLATE_ID = os.environ.get('SMS_TEMPLATE_ID', '')
 BUCKET = 'moodtree-1458420446'
 REGION = 'ap-shanghai'
 COS_HOST = f'{BUCKET}.cos.{REGION}.myqcloud.com'
@@ -444,6 +449,7 @@ PUBLIC_ENDPOINTS = {
     ('/api/auth/login', 'POST'),
     ('/api/auth/check-phone', 'POST'),
     ('/api/auth/send-code', 'POST'),
+    ('/api/auth/verify-code', 'POST'),
     ('/api/auth/reset-password', 'POST'),
     ('/api/rooms/public', 'GET'),
     ('/api/bottles/random', 'GET'),
@@ -974,8 +980,32 @@ def set_password(body):
     write_data(data)
     return {'success': True}
 
+def _send_tencent_sms(full_phone, code):
+    if not all((SMS_SECRET_ID, SMS_SECRET_KEY, SMS_SDK_APP_ID, SMS_SIGN_NAME, SMS_TEMPLATE_ID)):
+        return False, '短信服务尚未完成配置'
+    host = 'sms.tencentcloudapi.com'
+    payload = json.dumps({
+        'PhoneNumberSet': [full_phone],
+        'SmsSdkAppId': SMS_SDK_APP_ID,
+        'SignName': SMS_SIGN_NAME,
+        'TemplateId': SMS_TEMPLATE_ID,
+        'TemplateParamSet': [code, '5'],
+    }, ensure_ascii=False, separators=(',', ':'))
+    headers = _tc3_sign('sms', host, 'SendSms', 'ap-guangzhou', '2021-01-11', payload,
+                        sid=SMS_SECRET_ID, skey=SMS_SECRET_KEY)
+    try:
+        request = urllib.request.Request(f'https://{host}', data=payload.encode('utf-8'), headers=headers, method='POST')
+        with urllib.request.urlopen(request, timeout=12) as response:
+            result = json.loads(response.read().decode('utf-8'))
+        status = result.get('Response', {}).get('SendStatusSet', [{}])[0]
+        if status.get('Code') != 'Ok':
+            return False, status.get('Message') or result.get('Response', {}).get('Error', {}).get('Message', '短信发送失败')
+        return True, ''
+    except Exception as exc:
+        return False, f'短信发送失败：{str(exc)}'
+
 def send_sms_code(body):
-    """Generate and store a verification code for password reset"""
+    """Send a real one-time verification code for login or password reset."""
     phone = body.get('phone', '')
     valid, verr, full_phone = validate_phone(phone)
     if not valid:
@@ -985,10 +1015,50 @@ def send_sms_code(body):
     if not user:
         return {'error': '该手机号未注册'}
     code = str(random.randint(100000, 999999))
-    data['smsCodes'][full_phone] = {'code': code, 'expire': time.time() + 300}  # 5 min expiry
+    previous = data.setdefault('smsCodes', {}).get(full_phone, {})
+    if time.time() - previous.get('sentAt', 0) < 60:
+        return {'error': '发送太频繁，请60秒后再试'}
+    sent, send_error = _send_tencent_sms(full_phone, code)
+    if not sent:
+        return {'error': send_error}
+    data['smsCodes'][full_phone] = {'code': code, 'expire': time.time() + 300, 'sentAt': time.time()}
     write_data(data)
-    # No real SMS service - code stored server-side only, NOT returned in response (security)
     return {'success': True, 'message': '验证码已发送，请查看手机短信'}
+
+def verify_sms_login(body):
+    phone = body.get('phone', '')
+    code = str(body.get('code', ''))
+    valid, verr, full_phone = validate_phone(phone)
+    if not valid:
+        return {'error': verr}
+    data = read_data()
+    stored = data.setdefault('smsCodes', {}).get(full_phone)
+    if not stored or time.time() > stored.get('expire', 0):
+        return {'error': '验证码不存在或已过期'}
+    if not hmac.compare_digest(str(stored.get('code', '')), code):
+        return {'error': '验证码错误'}
+    user = next((u for u in data['users'] if u.get('phone') == full_phone), None)
+    if not user:
+        return {'error': '该手机号未注册'}
+    del data['smsCodes'][full_phone]
+    write_data(data)
+    return {'success': True, 'user': _sanitize_user(user), 'token': generate_token(user['id'])}
+
+def get_cloud_sync(user_id):
+    data = read_data()
+    return {'success': True, 'data': data.setdefault('userSync', {}).get(user_id, {})}
+
+def save_cloud_sync(body):
+    user_id = body.get('userId', '')
+    sync_data = body.get('data', {})
+    if not isinstance(sync_data, dict):
+        return {'error': '同步数据格式错误'}
+    allowed = ('themeColor', 'welcomeMsg', 'nightSettings', 'customCategories', 'drafts')
+    clean = {key: sync_data[key] for key in allowed if key in sync_data}
+    data = read_data()
+    data.setdefault('userSync', {})[user_id] = clean
+    write_data(data)
+    return {'success': True, 'data': clean, 'syncedAt': now_str('%Y-%m-%d %H:%M:%S')}
 
 def reset_password(body):
     """Reset password using SMS verification code"""
@@ -2521,6 +2591,12 @@ def main_handler(event, context):
             result = {'emojis': EMOJI_FULL}
         elif path == '/api/auth/login' and method == 'POST':
             result = handle_login(req)
+        elif path == '/api/auth/verify-code' and method == 'POST':
+            result = verify_sms_login(req)
+        elif path == '/api/sync' and method == 'GET':
+            result = get_cloud_sync(qp.get('userid', ''))
+        elif path == '/api/sync' and method == 'POST':
+            result = save_cloud_sync(req)
         elif path == '/api/user/profile' and method == 'POST':
             result = update_profile(req)
         elif path == '/api/user/search' and method == 'GET':

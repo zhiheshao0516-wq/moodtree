@@ -11015,22 +11015,22 @@ class Dv extends p.Component {
       : this.props.children;
   }
 }
-const rp = "https://1448059519-4ejnraef98.ap-shanghai.tencentscf.com";
+const rp = (import.meta.env.VITE_API_BASE || "https://1458420446-758vamuceo.ap-shanghai.tencentscf.com").replace(/\/$/, "");
 function bu() {
   try {
-    return localStorage.getItem("moodtree-token");
+    return localStorage.getItem("moodtree-token") || sessionStorage.getItem("moodtree-token");
   } catch {
     return null;
   }
 }
-function su(r) {
+function su(r, u = !0) {
   try {
-    localStorage.setItem("moodtree-token", r);
+    (localStorage.removeItem("moodtree-token"), sessionStorage.removeItem("moodtree-token"), (u ? localStorage : sessionStorage).setItem("moodtree-token", r));
   } catch {}
 }
 function cp() {
   try {
-    localStorage.removeItem("moodtree-token");
+    (localStorage.removeItem("moodtree-token"), sessionStorage.removeItem("moodtree-token"));
   } catch {}
 }
 let yu = null;
@@ -11040,7 +11040,7 @@ function Av(r) {
 function op() {
   cp();
   try {
-    localStorage.removeItem("moodtree-user");
+    (localStorage.removeItem("moodtree-user"), sessionStorage.removeItem("moodtree-user"));
   } catch {}
   yu && yu();
 }
@@ -11919,7 +11919,7 @@ function Uv() {
           }
         };
       document.addEventListener("visibilitychange", oe);
-      const Ne = Te.getItem("moodtree-user");
+      const Ne = Te.getItem("moodtree-user") || Bm.getItem("moodtree-user");
       if ((Ne && !bu() && Te.removeItem("moodtree-user"), Ne && bu()))
         try {
           const _e = JSON.parse(Ne);
@@ -11978,6 +11978,36 @@ function Uv() {
           })
           .catch(() => {});
     }, [k]),
+    p.useEffect(() => {
+      if (!(k != null && k.id)) return;
+      const M = {
+        themeColor: Te.getItem("moodtree-theme-color") || "#6f917d",
+        welcomeMsg: Te.getItem("moodtree-welcome-msg") || "",
+        nightSettings: Kn(),
+        customCategories: (() => { try { return JSON.parse(Te.getItem("moodtree-custom-cats") || "[]"); } catch { return []; } })(),
+        drafts: (() => { try { return JSON.parse(Te.getItem("moodtree-drafts") || "[]"); } catch { return []; } })(),
+      };
+      qe("/api/sync").then((Q) => {
+        const oe = Q.data || {};
+        if (Object.keys(oe).length === 0) {
+          pe("/api/sync", { data: M }).catch(() => {});
+          return;
+        }
+        oe.themeColor && (Te.setItem("moodtree-theme-color", oe.themeColor), V(oe.themeColor), Ir(oe.themeColor));
+        oe.welcomeMsg !== void 0 && (oe.welcomeMsg ? Te.setItem("moodtree-welcome-msg", oe.welcomeMsg) : Te.removeItem("moodtree-welcome-msg"));
+        oe.nightSettings && Te.setItem("moodtree-night-settings", JSON.stringify(oe.nightSettings));
+        oe.customCategories && Te.setItem("moodtree-custom-cats", JSON.stringify(oe.customCategories));
+        oe.drafts && Te.setItem("moodtree-drafts", JSON.stringify(oe.drafts));
+      }).catch(() => {});
+      const Q = window.setInterval(() => pe("/api/sync", { data: {
+        themeColor: Te.getItem("moodtree-theme-color") || "#6f917d",
+        welcomeMsg: Te.getItem("moodtree-welcome-msg") || "",
+        nightSettings: Kn(),
+        customCategories: (() => { try { return JSON.parse(Te.getItem("moodtree-custom-cats") || "[]"); } catch { return []; } })(),
+        drafts: (() => { try { return JSON.parse(Te.getItem("moodtree-drafts") || "[]"); } catch { return []; } })(),
+      } }).catch(() => {}), 30000);
+      return () => window.clearInterval(Q);
+    }, [k == null ? void 0 : k.id]),
     p.useEffect(() => {
       r === "rooms" && k && fe === "list" && Vt();
     }, [r, k, fe]),
@@ -12298,8 +12328,9 @@ function Uv() {
       J &&
         n.jsx(Pv, {
           onClose: () => D(!1),
-          onSuccess: (M) => {
-            (Te.setItem("moodtree-user", JSON.stringify(M)), X(M), D(!1), me("登录成功，欢迎回到树洞"));
+          onSuccess: (M, Q = !0) => {
+            const oe = Q ? Te : Bm, Ne = Q ? Bm : Te;
+            (Ne.removeItem("moodtree-user"), oe.setItem("moodtree-user", JSON.stringify(M)), X(M), D(!1), me("登录成功，欢迎回到树洞"));
           },
         }),
       Ee && n.jsx(Fv, { uid: Ee, viewerId: (k == null ? void 0 : k.id) || "", onClose: () => Pe(null) }),
@@ -12310,7 +12341,8 @@ function Uv() {
           user: k,
           flash: me,
           onSuccess: (M) => {
-            (Te.setItem("moodtree-user", JSON.stringify(M)), X(M), ze(!1), me("资料已更新"));
+            const Q = Bm.getItem("moodtree-user") ? Bm : Te;
+            (Q.setItem("moodtree-user", JSON.stringify(M)), X(M), ze(!1), me("资料已更新"));
           },
         }),
       N &&
@@ -18101,6 +18133,7 @@ function Pv({ onClose: r, onSuccess: u }) {
     [I, V] = p.useState(""),
     [de, P] = p.useState(""),
     [Y, K] = p.useState(null),
+    [rememberDevice, setRememberDevice] = p.useState(!0),
     F = (w) => {
       (c(w), d("phone"), y(""), S(""), H(""), V(""), P(""), K(null));
     },
@@ -18176,7 +18209,7 @@ function Pv({ onClose: r, onSuccess: u }) {
           ze = ee.avatar || N;
         (Te.setItem("moodtree-nickname", je), Te.setItem("moodtree-avatar", ze));
         const Ee = { id: ee.id, phone: he, nickname: je, avatar: ze, avatarType: ee.avatarType || "char", createdAt: ee.createdAt, provider: "phone" };
-        (_.token && su(_.token), u(Ee));
+        (_.token && su(_.token, rememberDevice), u(Ee, rememberDevice));
       } catch {
         V("注册失败，请稍后重试");
       }
@@ -18202,7 +18235,7 @@ function Pv({ onClose: r, onSuccess: u }) {
           ze = ee.avatar || N;
         (Te.setItem("moodtree-nickname", je), Te.setItem("moodtree-avatar", ze));
         const Ee = { id: ee.id, phone: he, nickname: je, avatar: ze, avatarType: ee.avatarType || "char", createdAt: ee.createdAt, provider: "phone" };
-        (_.token && su(_.token), u(Ee));
+        (_.token && su(_.token, rememberDevice), u(Ee, rememberDevice));
       } catch {
         V("登录失败，请稍后重试");
       }
@@ -18244,13 +18277,13 @@ function Pv({ onClose: r, onSuccess: u }) {
           ze = ee.avatar || N;
         (Te.setItem("moodtree-nickname", je), Te.setItem("moodtree-avatar", ze));
         const Ee = { id: ee.id, phone: he, nickname: je, avatar: ze, avatarType: ee.avatarType || "char", createdAt: ee.createdAt, provider: "phone" };
-        (_.token && su(_.token), u(Ee));
+        (_.token && su(_.token, rememberDevice), u(Ee, rememberDevice));
       } catch {
         V("设置失败，请稍后重试");
       }
       D(!1);
     },
-    $ = async () => {
+    $ = async (targetStep = "forgotCode") => {
       const w = Gm(h);
       if (!w.valid) {
         V(w.error);
@@ -18263,9 +18296,29 @@ function Pv({ onClose: r, onSuccess: u }) {
           (V(x.error), D(!1));
           return;
         }
-        (P(x.code ? `验证码：${x.code}（开发模式直接显示）` : "验证码已发送"), d("forgotCode"));
+        (P("验证码已发送"), d(targetStep));
       } catch {
         V("发送失败，请稍后重试");
+      }
+      D(!1);
+    },
+    verifyLoginCode = async (w) => {
+      if ((w.preventDefault(), !T || T.length !== 6)) {
+        V("请输入6位验证码");
+        return;
+      }
+      (D(!0), V(""));
+      try {
+        const x = await pe("/api/auth/verify-code", { phone: h, code: T });
+        if (x.error) {
+          (V(x.error), D(!1));
+          return;
+        }
+        const N = x.user || x,
+          _ = { id: N.id, phone: N.phone || (h.startsWith("+") ? h : `+${h}`), nickname: N.nickname, avatar: N.avatar || cu(), avatarType: N.avatarType || "char", createdAt: N.createdAt, provider: "phone" };
+        (x.token && su(x.token, rememberDevice), u(_, rememberDevice));
+      } catch {
+        V("验证码登录失败，请稍后重试");
       }
       D(!1);
     },
@@ -18388,11 +18441,31 @@ function Pv({ onClose: r, onSuccess: u }) {
                 type: "button",
                 className: "change-phone",
                 style: { color: "#5b8def", background: "transparent", boxShadow: "none" },
+                onClick: () => $("smsLoginCode"),
+                children: "使用短信验证码登录",
+              }),
+              n.jsx("button", {
+                type: "button",
+                className: "change-phone",
+                style: { color: "#5b8def", background: "transparent", boxShadow: "none" },
                 onClick: () => {
                   (d("forgot"), V(""), P(""), y(""), S(""), H(""));
                 },
                 children: "忘记密码？",
               }),
+            ],
+          }),
+        m === "smsLoginCode" &&
+          n.jsxs("form", {
+            className: "phone-form",
+            onSubmit: verifyLoginCode,
+            children: [
+              n.jsxs("label", { children: ["验证码已发送至 +", fe] }),
+              de && n.jsx("p", { style: { fontSize: "12px", color: "#5b8def", margin: "6px 0", fontWeight: 500 }, children: de }),
+              n.jsx("div", { className: "code-input", children: n.jsx("input", { inputMode: "numeric", maxLength: 6, value: T, onChange: (w) => H(w.target.value.replace(/\D/g, "")), placeholder: "输入6位验证码", autoFocus: !0 }) }),
+              n.jsx("button", { disabled: J, children: J ? "正在验证…" : "验证码登录" }),
+              n.jsx("button", { type: "button", className: "change-phone", onClick: () => $("smsLoginCode"), children: "重新发送验证码" }),
+              n.jsx("button", { type: "button", className: "change-phone", onClick: () => d("password"), children: "使用密码登录" }),
             ],
           }),
         m === "setPassword" &&
@@ -18481,6 +18554,7 @@ function Pv({ onClose: r, onSuccess: u }) {
               }),
             ],
           }),
+        o === "login" && n.jsxs("label", { style: { display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", margin: "12px 0 2px", fontSize: "12px", color: "#6f756f", cursor: "pointer" }, children: [n.jsx("input", { type: "checkbox", checked: rememberDevice, onChange: (w) => setRememberDevice(w.target.checked) }), "记住这台设备（30天免登录）"] }),
         I && n.jsx("p", { className: "login-error", role: "alert", children: I }),
         n.jsxs("p", { className: "login-terms", children: [o === "login" ? "登录" : "注册", "即代表你同意《用户协议》和《隐私政策》"] }),
       ],
