@@ -11015,7 +11015,7 @@ class Dv extends p.Component {
       : this.props.children;
   }
 }
-const rp = (import.meta.env.VITE_API_BASE || "https://1458420446-758vamuceo.ap-shanghai.tencentscf.com").replace(/\/$/, "");
+const rp = (import.meta.env.VITE_API_BASE ?? "https://1458420446-758vamuceo.ap-shanghai.tencentscf.com").replace(/\/$/, "");
 function bu() {
   try {
     return localStorage.getItem("moodtree-token") || sessionStorage.getItem("moodtree-token");
