@@ -1,5 +1,7 @@
 :root { --ink:#26352e; --muted:#78827b; --cream:#f8f5ed; --paper:#fffdf8; --sage:#6f917d; --sage-dark:#4f765f; --sage-soft:#e5eee7; --line:#e7e4db; --peach:#f4e5d8; }
 * { box-sizing:border-box; }
+html,body{overflow-x:hidden}
+img{max-width:100%;height:auto}
 html { scroll-behavior:smooth; }
 body { margin:0; background:var(--cream); color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif; -webkit-font-smoothing:antialiased; }
 button,input,textarea { font:inherit; }

@@ -11049,12 +11049,20 @@ function up() {
   return r ? { Authorization: `Bearer ${r}` } : {};
 }
 async function qe(r) {
-  const u = await fetch(`${rp}${r}`, { headers: up() });
-  return u.status === 401 ? (op(), { error: "登录已过期" }) : u.json();
+  try {
+    const u = await fetch(`${rp}${r}`, { headers: up() });
+    return u.status === 401 ? (op(), { error: "登录已过期" }) : u.json();
+  } catch {
+    return { error: "网络异常" };
+  }
 }
 async function pe(r, u) {
-  const o = await fetch(`${rp}${r}`, { method: "POST", headers: { "Content-Type": "application/json", ...up() }, body: JSON.stringify(u) });
-  return o.status === 401 ? (op(), { error: "登录已过期" }) : o.json();
+  try {
+    const o = await fetch(`${rp}${r}`, { method: "POST", headers: { "Content-Type": "application/json", ...up() }, body: JSON.stringify(u) });
+    return o.status === 401 ? (op(), { error: "登录已过期" }) : o.json();
+  } catch {
+    return { error: "网络异常" };
+  }
 }
 const Te = {
     getItem(r) {
@@ -13147,7 +13155,7 @@ function Xv({ onCancel: r, onPublish: u, user: o, publishRoomId: c, flash: m }) 
     [Ve, pt] = p.useState(null),
     [ot, gt] = p.useState(null),
     [yt, fa] = p.useState(0);
-    [vioList, setVioList] = p.useState([]);
+    const [vioList, setVioList] = p.useState([]);
   p.useRef(new Map());
   const we = p.useRef(null);
   const checkLocal = (Gr) => {
@@ -13978,7 +13986,7 @@ function Gv({ post: r, onBack: u, react: o, update: c, user: m, onStartDM: d, fl
           h(ge.error);
           return;
         }
-        (c({ ...r, comments: r.comments.filter((Ae) => Ae.id !== se).map((Ae) => (Ae.replies.some((ct) => ct.id === se) ? { ...Ae, replies: Ae.replies.filter((ct) => ct.id !== se) } : Ae)) }), h("评论已删除"));
+        (c({ ...r, comments: (r.comments || []).filter((Ae) => Ae.id !== se).map((Ae) => ((Ae.replies || []).some((ct) => ct.id === se) ? { ...Ae, replies: (Ae.replies || []).filter((ct) => ct.id !== se) } : Ae)) }), h("评论已删除"));
       } catch {
         h("删除失败，请重试");
       }
@@ -14761,8 +14769,8 @@ function Vv({ comment: r, onReply: u, onLongPress: o, onReplyLongPress: c, onAva
           n.jsxs("div", { children: [n.jsx("b", { children: r.author }), r.isAI ? null : n.jsx("span", { children: zu(r) })] }),
           n.jsx("p", { children: r.text }),
           n.jsxs("div", { className: "comment-buttons", children: [n.jsxs("button", { onClick: () => h(!d), className: d ? "saved" : "", children: ["♡ ", r.likes + (d ? 1 : 0)] }), n.jsx("button", { onClick: u, children: "回复" })] }),
-          r.images && r.images.length > 0 && n.jsx("div", { className: "comment-images-row", children: r.images.map((j, y) => n.jsx("img", { src: j, alt: "", className: "comment-image-thumb", loading: "lazy" }, y)) }),
-          r.replies.map((j) => n.jsx($v, { reply: j, onLongPress: c ? () => c(j) : void 0 }, j.id)),
+          (r.images || []).length > 0 && n.jsx("div", { className: "comment-images-row", children: (r.images || []).map((j, y) => n.jsx("img", { src: j, alt: "", className: "comment-image-thumb", loading: "lazy" }, y)) }),
+          (r.replies || []).map((j) => n.jsx($v, { reply: j, onLongPress: c ? () => c(j) : void 0 }, j.id)),
         ],
       }),
     ],
@@ -14776,7 +14784,7 @@ function $v({ reply: r, onLongPress: u }) {
     children: [
       n.jsx("b", { children: r.author }),
       n.jsx("p", { children: r.text }),
-      r.images && r.images.length > 0 && n.jsx("div", { className: "comment-images-row", children: r.images.map((c, m) => n.jsx("img", { src: c, alt: "", className: "comment-image-thumb", loading: "lazy" }, m)) }),
+      (r.images || []).length > 0 && n.jsx("div", { className: "comment-images-row", children: (r.images || []).map((c, m) => n.jsx("img", { src: c, alt: "", className: "comment-image-thumb", loading: "lazy" }, m)) }),
       n.jsx("span", { children: zu(r) }),
     ],
   });
@@ -18121,6 +18129,9 @@ function Gm(r) {
     c = r.slice(u.length);
   return c.length !== o.len ? { valid: !1, error: `${o.name}手机号应为${o.len}位（不含国家代码${u}），当前${c.length}位` } : o.pattern.test(c) ? { valid: !0 } : { valid: !1, error: `${o.name}手机号格式不正确` };
 }
+function emailValid(r) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(r.trim());
+}
 function Pv({ onClose: r, onSuccess: u }) {
   const [o, c] = p.useState("login"),
     [m, d] = p.useState("phone"),
@@ -18134,36 +18145,41 @@ function Pv({ onClose: r, onSuccess: u }) {
     [de, P] = p.useState(""),
     [Y, K] = p.useState(null),
     [rememberDevice, setRememberDevice] = p.useState(!0),
+    [loginMethod, setLoginMethod] = p.useState("phone"),
+    [countdown, setCountdown] = p.useState(0),
     F = (w) => {
       (c(w), d("phone"), y(""), S(""), H(""), V(""), P(""), K(null));
     },
-    Z = wp(h),
+    accountPayload = loginMethod === "email" ? { email: h.trim().toLowerCase() } : { phone: h },
+    validateAccount = () => (loginMethod === "email" ? (emailValid(h) ? { valid: !0 } : { valid: !1, error: "请输入正确的邮箱地址" }) : Gm(h)),
+    accountLabel = loginMethod === "email" ? `邮箱 ${h}` : `手机号 +${h.length > 4 ? `${h.slice(0, 2)}****${h.slice(-3)}` : h}`,
+    Z = loginMethod === "phone" ? wp(h) : null,
     ye = Z ? Wr[Z].name : null,
     Ce = Z ? Wr[Z].len : null,
     Se = Z ? h.length - Z.length : 0,
     ke = async (w) => {
       w.preventDefault();
-      const x = Gm(h);
+      const x = validateAccount();
       if (!x.valid) {
         V(x.error);
         return;
       }
       (D(!0), V(""), P(""));
       try {
-        const N = await pe("/api/auth/check-phone", { phone: h });
+        const N = await pe("/api/auth/check-phone", accountPayload);
         if (N.error) {
           (V(N.error), D(!1));
           return;
         }
         if ((K(N), o === "login")) {
           if (!N.exists) {
-            (V("该手机号未注册，请先注册"), D(!1));
+            (V("该账号未注册，请先注册"), D(!1));
             return;
           }
           N.hasPassword ? d("password") : (d("setPassword"), P("首次设置密码，请为你的账号设置登录密码"));
         } else {
           if (N.exists) {
-            (V("该手机号已注册，请直接登录"), D(!1));
+            (V("该账号已注册，请直接登录"), D(!1));
             return;
           }
           (d("register"), P("设置登录密码，完成注册"));
@@ -18198,7 +18214,7 @@ function Pv({ onClose: r, onSuccess: u }) {
       try {
         const x = ru(),
           N = cu(),
-          _ = await pe("/api/auth/login", { phone: h, password: j, nickname: x, avatar: N });
+          _ = await pe("/api/auth/login", { ...accountPayload, password: j, nickname: x, avatar: N });
         if (_.error) {
           (V(_.error), D(!1));
           return;
@@ -18208,7 +18224,7 @@ function Pv({ onClose: r, onSuccess: u }) {
           je = ee.nickname || x,
           ze = ee.avatar || N;
         (Te.setItem("moodtree-nickname", je), Te.setItem("moodtree-avatar", ze));
-        const Ee = { id: ee.id, phone: he, nickname: je, avatar: ze, avatarType: ee.avatarType || "char", createdAt: ee.createdAt, provider: "phone" };
+        const Ee = { id: ee.id, phone: ee.phone || (loginMethod === "phone" ? he : ""), email: ee.email || (loginMethod === "email" ? h.trim().toLowerCase() : ""), nickname: je, avatar: ze, avatarType: ee.avatarType || "char", createdAt: ee.createdAt, provider: loginMethod };
         (_.token && su(_.token, rememberDevice), u(Ee, rememberDevice));
       } catch {
         V("注册失败，请稍后重试");
@@ -18224,7 +18240,7 @@ function Pv({ onClose: r, onSuccess: u }) {
       try {
         const x = ru(),
           N = cu(),
-          _ = await pe("/api/auth/login", { phone: h, password: j, nickname: x, avatar: N });
+          _ = await pe("/api/auth/login", { ...accountPayload, password: j, nickname: x, avatar: N });
         if (_.error) {
           (V(_.error), D(!1));
           return;
@@ -18234,7 +18250,7 @@ function Pv({ onClose: r, onSuccess: u }) {
           je = ee.nickname || x,
           ze = ee.avatar || N;
         (Te.setItem("moodtree-nickname", je), Te.setItem("moodtree-avatar", ze));
-        const Ee = { id: ee.id, phone: he, nickname: je, avatar: ze, avatarType: ee.avatarType || "char", createdAt: ee.createdAt, provider: "phone" };
+        const Ee = { id: ee.id, phone: ee.phone || (loginMethod === "phone" ? he : ""), email: ee.email || (loginMethod === "email" ? h.trim().toLowerCase() : ""), nickname: je, avatar: ze, avatarType: ee.avatarType || "char", createdAt: ee.createdAt, provider: loginMethod };
         (_.token && su(_.token, rememberDevice), u(Ee, rememberDevice));
       } catch {
         V("登录失败，请稍后重试");
@@ -18266,7 +18282,7 @@ function Pv({ onClose: r, onSuccess: u }) {
       try {
         const x = ru(),
           N = cu(),
-          _ = await pe("/api/auth/login", { phone: h, password: j, nickname: x, avatar: N });
+          _ = await pe("/api/auth/login", { ...accountPayload, password: j, nickname: x, avatar: N });
         if (_.error) {
           (V(_.error), D(!1));
           return;
@@ -18276,7 +18292,7 @@ function Pv({ onClose: r, onSuccess: u }) {
           je = ee.nickname || x,
           ze = ee.avatar || N;
         (Te.setItem("moodtree-nickname", je), Te.setItem("moodtree-avatar", ze));
-        const Ee = { id: ee.id, phone: he, nickname: je, avatar: ze, avatarType: ee.avatarType || "char", createdAt: ee.createdAt, provider: "phone" };
+        const Ee = { id: ee.id, phone: ee.phone || (loginMethod === "phone" ? he : ""), email: ee.email || (loginMethod === "email" ? h.trim().toLowerCase() : ""), nickname: je, avatar: ze, avatarType: ee.avatarType || "char", createdAt: ee.createdAt, provider: loginMethod };
         (_.token && su(_.token, rememberDevice), u(Ee, rememberDevice));
       } catch {
         V("设置失败，请稍后重试");
@@ -18284,19 +18300,20 @@ function Pv({ onClose: r, onSuccess: u }) {
       D(!1);
     },
     $ = async (targetStep = "forgotCode") => {
-      const w = Gm(h);
+      if (countdown > 0) return;
+      const w = validateAccount();
       if (!w.valid) {
         V(w.error);
         return;
       }
       (D(!0), V(""));
       try {
-        const x = await pe("/api/auth/send-code", { phone: h });
+        const x = await pe("/api/auth/send-code", accountPayload);
         if (x.error) {
           (V(x.error), D(!1));
           return;
         }
-        (P("验证码已发送"), d(targetStep));
+        (P(loginMethod === "email" ? "验证码已发送，请检查邮箱" : "验证码已发送"), setCountdown(60), d(targetStep));
       } catch {
         V("发送失败，请稍后重试");
       }
@@ -18309,13 +18326,13 @@ function Pv({ onClose: r, onSuccess: u }) {
       }
       (D(!0), V(""));
       try {
-        const x = await pe("/api/auth/verify-code", { phone: h, code: T });
+        const x = await pe("/api/auth/verify-code", { ...accountPayload, code: T });
         if (x.error) {
           (V(x.error), D(!1));
           return;
         }
         const N = x.user || x,
-          _ = { id: N.id, phone: N.phone || (h.startsWith("+") ? h : `+${h}`), nickname: N.nickname, avatar: N.avatar || cu(), avatarType: N.avatarType || "char", createdAt: N.createdAt, provider: "phone" };
+          _ = { id: N.id, phone: N.phone || "", email: N.email || "", nickname: N.nickname, avatar: N.avatar || cu(), avatarType: N.avatarType || "char", createdAt: N.createdAt, provider: loginMethod };
         (x.token && su(x.token, rememberDevice), u(_, rememberDevice));
       } catch {
         V("验证码登录失败，请稍后重试");
@@ -18349,7 +18366,7 @@ function Pv({ onClose: r, onSuccess: u }) {
       }
       (D(!0), V(""));
       try {
-        const x = await pe("/api/auth/reset-password", { phone: h, code: T, newPassword: j });
+        const x = await pe("/api/auth/reset-password", { ...accountPayload, code: T, newPassword: j });
         if (x.error) {
           (V(x.error), D(!1));
           return;
@@ -18362,6 +18379,11 @@ function Pv({ onClose: r, onSuccess: u }) {
     },
     fe = h.length > 4 ? `${h.slice(0, 2)}****${h.slice(-3)}` : h,
     be = "密码必须是8-16位的英文字母、数字组合（不能是纯数字）";
+  p.useEffect(() => {
+    if (countdown <= 0) return;
+    const timer = window.setTimeout(() => setCountdown((value) => Math.max(0, value - 1)), 1000);
+    return () => window.clearTimeout(timer);
+  }, [countdown]);
   return n.jsx("div", {
     className: "login-overlay",
     role: "dialog",
@@ -18383,28 +18405,30 @@ function Pv({ onClose: r, onSuccess: u }) {
           className: "login-copy",
           children: [n.jsx("h2", { children: o === "login" ? "欢迎回到树洞" : "加入 MoodTree" }), n.jsx("p", { children: o === "login" ? "登录信息只用于保护你的内容，社区里仍会显示匿名昵称。" : "注册后即可发布心事、回应他人、结识树洞好友。" })],
         }),
+        (m === "phone" || m === "forgot") && n.jsxs("div", { className: "account-method-tabs", children: [n.jsx("button", { type: "button", className: loginMethod === "phone" ? "active" : "", onClick: () => { setLoginMethod("phone"); v(""); V(""); }, children: "手机号" }), n.jsx("button", { type: "button", className: loginMethod === "email" ? "active" : "", onClick: () => { setLoginMethod("email"); v(""); V(""); }, children: "邮箱" })] }),
         m === "phone" &&
           n.jsxs("form", {
             className: "phone-form",
             onSubmit: ke,
             children: [
-              n.jsx("label", { children: "手机号（含国家代码）" }),
+              n.jsx("label", { children: loginMethod === "email" ? "邮箱" : "手机号（含国家代码）" }),
               n.jsxs("div", {
                 children: [
-                  n.jsx("span", { children: "+" }),
+                  loginMethod === "phone" && n.jsx("span", { children: "+" }),
                   n.jsx("input", {
-                    inputMode: "tel",
-                    maxLength: 15,
+                    type: loginMethod === "email" ? "email" : "text",
+                    inputMode: loginMethod === "email" ? "email" : "tel",
+                    maxLength: loginMethod === "email" ? 254 : 15,
                     value: h,
                     onChange: (w) => {
-                      (v(w.target.value.replace(/[^\d]/g, "")), V(""));
+                      (v(loginMethod === "email" ? w.target.value.trim() : w.target.value.replace(/[^\d]/g, "")), V(""));
                     },
-                    placeholder: "如 86 13800138000",
+                    placeholder: loginMethod === "email" ? "如 hello@example.com" : "如 86 13800138000",
                     autoFocus: !0,
                   }),
                 ],
               }),
-              ye && n.jsxs("p", { style: { fontSize: "10px", color: "#6f917d", margin: "6px 2px 0", fontWeight: 500 }, children: [ye, " · 需", Ce, "位号码", Se > 0 ? `（已输${Se}位）` : ""] }),
+              loginMethod === "phone" && ye && n.jsxs("p", { style: { fontSize: "10px", color: "#6f917d", margin: "6px 2px 0", fontWeight: 500 }, children: [ye, " · 需", Ce, "位号码", Se > 0 ? `（已输${Se}位）` : ""] }),
               n.jsx("button", { disabled: J, children: J ? "请稍候…" : o === "login" ? "下一步" : "去设置密码" }),
             ],
           }),
@@ -18413,7 +18437,7 @@ function Pv({ onClose: r, onSuccess: u }) {
             className: "phone-form",
             onSubmit: ue,
             children: [
-              n.jsxs("label", { children: ["手机号 +", fe] }),
+              n.jsx("label", { children: accountLabel }),
               n.jsxs("div", {
                 className: "code-input",
                 style: { position: "relative" },
@@ -18435,14 +18459,14 @@ function Pv({ onClose: r, onSuccess: u }) {
                 onClick: () => {
                   (d("phone"), y(""), V(""), P(""));
                 },
-                children: "更换手机号",
+                children: "更换账号",
               }),
               n.jsx("button", {
                 type: "button",
                 className: "change-phone",
                 style: { color: "#5b8def", background: "transparent", boxShadow: "none" },
                 onClick: () => $("smsLoginCode"),
-                children: "使用短信验证码登录",
+                children: loginMethod === "email" ? "使用邮件验证码登录" : "使用短信验证码登录",
               }),
               n.jsx("button", {
                 type: "button",
@@ -18460,11 +18484,11 @@ function Pv({ onClose: r, onSuccess: u }) {
             className: "phone-form",
             onSubmit: verifyLoginCode,
             children: [
-              n.jsxs("label", { children: ["验证码已发送至 +", fe] }),
+              n.jsx("label", { children: `验证码已发送至 ${loginMethod === "email" ? h : `+${fe}`}` }),
               de && n.jsx("p", { style: { fontSize: "12px", color: "#5b8def", margin: "6px 0", fontWeight: 500 }, children: de }),
               n.jsx("div", { className: "code-input", children: n.jsx("input", { inputMode: "numeric", maxLength: 6, value: T, onChange: (w) => H(w.target.value.replace(/\D/g, "")), placeholder: "输入6位验证码", autoFocus: !0 }) }),
               n.jsx("button", { disabled: J, children: J ? "正在验证…" : "验证码登录" }),
-              n.jsx("button", { type: "button", className: "change-phone", onClick: () => $("smsLoginCode"), children: "重新发送验证码" }),
+              n.jsx("button", { type: "button", className: "change-phone", disabled: countdown > 0, onClick: () => $("smsLoginCode"), children: countdown > 0 ? `${countdown}秒后可重发` : "重新发送验证码" }),
               n.jsx("button", { type: "button", className: "change-phone", onClick: () => d("password"), children: "使用密码登录" }),
             ],
           }),
@@ -18473,7 +18497,7 @@ function Pv({ onClose: r, onSuccess: u }) {
             className: "phone-form",
             onSubmit: R,
             children: [
-              n.jsxs("label", { children: ["手机号 +", fe] }),
+              n.jsx("label", { children: accountLabel }),
               n.jsx("p", { style: { fontSize: "12px", color: "#6f917d", margin: "6px 0" }, children: de }),
               n.jsx("div", { className: "code-input", children: n.jsx("input", { type: "password", value: j, onChange: (w) => y(w.target.value), placeholder: "设置登录密码", autoFocus: !0 }) }),
               n.jsx("div", { className: "code-input", style: { marginTop: "8px" }, children: n.jsx("input", { type: "password", value: C, onChange: (w) => S(w.target.value), placeholder: "再次输入确认" }) }),
@@ -18494,7 +18518,7 @@ function Pv({ onClose: r, onSuccess: u }) {
             className: "phone-form",
             onSubmit: Oe,
             children: [
-              n.jsxs("label", { children: ["手机号 +", fe] }),
+              n.jsx("label", { children: accountLabel }),
               n.jsx("p", { style: { fontSize: "12px", color: "#6f917d", margin: "6px 0" }, children: de }),
               n.jsx("div", { className: "code-input", children: n.jsx("input", { type: "password", value: j, onChange: (w) => y(w.target.value), placeholder: "设置登录密码", autoFocus: !0 }) }),
               n.jsx("div", { className: "code-input", style: { marginTop: "8px" }, children: n.jsx("input", { type: "password", value: C, onChange: (w) => S(w.target.value), placeholder: "再次输入确认" }) }),
@@ -18518,10 +18542,10 @@ function Pv({ onClose: r, onSuccess: u }) {
             },
             children: [
               n.jsx("label", { children: "忘记密码" }),
-              n.jsx("p", { style: { fontSize: "12px", color: "#6f917d", margin: "6px 0" }, children: "通过绑定的手机号接收验证码来重置密码" }),
-              n.jsxs("div", { children: [n.jsx("span", { children: "+" }), n.jsx("input", { inputMode: "tel", maxLength: 15, value: h, onChange: (w) => v(w.target.value.replace(/[^\d]/g, "")), placeholder: "如 86 13800138000", autoFocus: !0 })] }),
-              ye && n.jsxs("p", { style: { fontSize: "10px", color: "#6f917d", margin: "6px 2px 0", fontWeight: 500 }, children: [ye, " · 需", Ce, "位号码"] }),
-              n.jsx("button", { disabled: J, children: J ? "发送中…" : "发送验证码" }),
+              n.jsx("p", { style: { fontSize: "12px", color: "#6f917d", margin: "6px 0" }, children: loginMethod === "email" ? "通过绑定邮箱接收验证码来重置密码" : "通过绑定手机号接收验证码来重置密码" }),
+              n.jsxs("div", { children: [loginMethod === "phone" && n.jsx("span", { children: "+" }), n.jsx("input", { type: loginMethod === "email" ? "email" : "text", inputMode: loginMethod === "email" ? "email" : "tel", maxLength: loginMethod === "email" ? 254 : 15, value: h, onChange: (w) => v(loginMethod === "email" ? w.target.value.trim() : w.target.value.replace(/[^\d]/g, "")), placeholder: loginMethod === "email" ? "如 hello@example.com" : "如 86 13800138000", autoFocus: !0 })] }),
+              loginMethod === "phone" && ye && n.jsxs("p", { style: { fontSize: "10px", color: "#6f917d", margin: "6px 2px 0", fontWeight: 500 }, children: [ye, " · 需", Ce, "位号码"] }),
+              n.jsx("button", { disabled: J || countdown > 0, children: J ? "发送中…" : countdown > 0 ? `${countdown}秒后可重发` : "发送验证码" }),
               n.jsx("button", {
                 type: "button",
                 className: "change-phone",
@@ -18550,7 +18574,8 @@ function Pv({ onClose: r, onSuccess: u }) {
                 onClick: () => {
                   (d("forgot"), V(""), P(""), H(""), y(""), S(""));
                 },
-                children: "重新发送",
+                disabled: countdown > 0,
+                children: countdown > 0 ? `${countdown}秒后可重发` : "重新发送",
               }),
             ],
           }),
