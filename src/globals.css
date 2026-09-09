@@ -295,3 +295,44 @@ fieldset { border:0; padding:0; margin:26px 0; }legend { font-size:12px; font-we
 .site-footer{text-align:center;padding:32px 16px 20px;font-size:11px;color:var(--muted);line-height:1.8;letter-spacing:.3px}
 .site-footer a{color:var(--sage-dark);text-decoration:none;border-bottom:1px solid transparent;transition:border-color .2s}
 .site-footer a:hover{border-color:var(--sage-dark)}
+
+/* MoodTree iOS-aligned visual system */
+:root{--ios-bg:#F2F2F7;--ios-secondary:#8E8E93;--ios-separator:rgba(60,60,67,.12);--ios-shadow:0 1px 3px rgba(0,0,0,.06)}
+body{background:var(--ios-bg);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue",sans-serif}
+button,input,textarea,select{-webkit-appearance:none;appearance:none}
+button{min-height:44px;border:0;border-radius:999px;transition:opacity 150ms ease,transform 150ms ease,background-color 150ms ease}
+button:active{opacity:.7;transform:scale(.98)}
+.plain,.back-button,.login-close,.friend-profile-close,.img-viewer-close,.publish-image-item>button,.comment-buttons button,.post-actions button,.desktop-nav button,.mobile-nav button{min-height:0}
+.post-card,.publish-card,.detail-card,.comments-card,.profile-card,.mine-content,.room-card,.diary-card{background:#fff;border:0;border-radius:16px;box-shadow:var(--ios-shadow)}
+.modal-overlay,.login-overlay,.friend-action-overlay,.friend-profile-overlay{background:rgba(0,0,0,.4);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.modal-card,.login-modal,.friend-action-sheet,.friend-profile-modal{border:0;border-radius:20px;background:#fff;box-shadow:0 18px 50px rgba(0,0,0,.16);animation:ios-modal-in 200ms ease-out both}
+.primary,.write-btn,.hero-button,.form-actions .primary{min-height:44px;border-radius:999px;background:var(--sage-dark);color:#fff}
+.secondary,.change-phone,.alias-cancel,.friend-action-cancel{min-height:44px;border:0;border-radius:999px;background:var(--ios-bg);color:var(--ink)}
+@keyframes ios-modal-in{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+
+/* Publish segmented control and matching upload cards */
+.publish-mode-toggle{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:0 0 24px;padding:4px;border:0;border-radius:16px;background:var(--ios-bg)}
+.publish-mode-toggle .mode-btn{display:flex;align-items:center;justify-content:center;gap:8px;min-width:0;min-height:56px;padding:8px 12px;border:0;border-radius:12px;background:transparent;box-shadow:none;text-align:left;transition:background-color 200ms ease,box-shadow 200ms ease,transform 150ms ease}
+.publish-mode-toggle .mode-btn.chosen{background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.publish-mode-toggle .mode-btn .mode-icon,.publish-mode-toggle .mode-btn .avatar{flex:0 0 auto}
+.publish-mode-toggle .mode-btn div{min-width:0;display:flex;flex-direction:column}.publish-mode-toggle .mode-btn b{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.publish-mode-toggle .mode-btn small{font-size:9px;color:var(--ios-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cover-upload-btn,.cover-upload-btn.video-btn{min-height:64px;margin-top:8px;padding:16px;border:1.5px dashed rgba(79,118,95,.35);border-radius:16px;background:#F7F8F7!important;color:var(--sage-dark)!important;box-shadow:none!important}
+.cover-upload-btn:active,.publish-image-add:active{background:#ECEFEC!important}
+
+/* Friend list split interaction */
+.chat-list-item{border-bottom:1px solid var(--ios-separator);border-radius:12px;transition:background-color 150ms ease,opacity 150ms ease,transform 150ms ease}
+.chat-list-item:active{background:#E5E5EA;opacity:.8;transform:scale(.995)}
+.friend-avatar-trigger{cursor:pointer;border-radius:14px}.friend-avatar-trigger:active{opacity:.7;transform:scale(.96)}
+
+/* Centered friend profile */
+.friend-profile-overlay{position:fixed;inset:0;z-index:120;display:grid;place-items:center;padding:16px}
+.friend-profile-modal{position:relative;display:flex;flex-direction:column;width:min(420px,90vw);max-height:min(680px,88vh);padding:24px;overflow:hidden}
+.friend-profile-close{position:absolute;right:16px;top:16px;z-index:2;width:32px;height:32px;border-radius:50%;background:var(--ios-bg);color:#636366;font-size:21px;line-height:1}
+.friend-profile-title{margin:0 40px 16px 0;font-size:20px;font-weight:650}.friend-profile-body{flex:1;min-height:180px;overflow:auto}
+.friend-profile-head{display:flex;align-items:center;gap:16px;padding:8px 0 20px;border-bottom:1px solid var(--ios-separator)}
+.friend-profile-head>.avatar{border-radius:18px!important}.friend-profile-head b{display:block;margin-bottom:6px;font-size:18px}
+.friend-profile-id{display:flex;align-items:center;gap:8px;color:var(--ios-secondary);font-size:12px}.friend-profile-id button{min-height:28px;padding:4px 10px;background:var(--ios-bg);font-size:11px}
+.friend-profile-private{min-height:240px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}.friend-profile-private>span{font-size:34px}.friend-profile-private h3{margin:12px 0 4px;font-size:17px}.friend-profile-private p{max-width:270px;margin:0;color:var(--ios-secondary);font-size:13px;line-height:1.55}
+.friend-profile-actions{flex:0 0 auto;padding-top:16px;border-top:1px solid var(--ios-separator)}.friend-profile-actions .primary{width:100%}
+.profile-view-post{padding:16px 0;border-bottom:1px solid var(--ios-separator)}
+@media(max-width:560px){.friend-profile-modal{width:min(420px,94vw);padding:24px 16px}.publish-mode-toggle .mode-btn small{display:none}}

@@ -12296,6 +12296,7 @@ function Uv() {
             n.jsx(Qv, {
               user: k,
               onStartDM: O,
+              onAvatarClick: Pe,
               onOpenRoom: (M) => {
                 (u("rooms"), St(M));
               },
@@ -12341,7 +12342,7 @@ function Uv() {
             (Ne.removeItem("moodtree-user"), oe.setItem("moodtree-user", JSON.stringify(M)), X(M), D(!1), me("登录成功，欢迎回到树洞"));
           },
         }),
-      Ee && n.jsx(Fv, { uid: Ee, viewerId: (k == null ? void 0 : k.id) || "", onClose: () => Pe(null) }),
+      Ee && n.jsx(Fv, { uid: Ee, viewerId: (k == null ? void 0 : k.id) || "", onClose: () => Pe(null), onMessage: (M) => { O(M); Pe(null); } }),
       je &&
         k &&
         n.jsx(i0, {
@@ -14797,7 +14798,7 @@ function Xm(r) {
   const u = r.match(/^\[quote\].*?\[\/quote\]([\s\S]*)$/);
   return u ? u[1].trim() : r;
 }
-function Qv({ user: r, onStartDM: u, onOpenRoom: o, flash: c, onUnreadUpdate: m, onFullscreenChange: d, onTextMenu: h }) {
+function Qv({ user: r, onStartDM: u, onOpenRoom: o, flash: c, onUnreadUpdate: m, onFullscreenChange: d, onTextMenu: h, onAvatarClick: profileClick }) {
   const [v, j] = p.useState([]),
     [y, C] = p.useState({}),
     [S, T] = p.useState([]),
@@ -14988,6 +14989,12 @@ function Qv({ user: r, onStartDM: u, onOpenRoom: o, flash: c, onUnreadUpdate: m,
                           },
                           children: [
                             n.jsxs("div", {
+                              className: "chat-list-avatar friend-avatar-trigger",
+                              onClick: (N) => {
+                                N.stopPropagation();
+                                profileClick == null || profileClick(x.id);
+                              },
+                              onTouchStart: (N) => N.stopPropagation(),
                               style: { position: "relative" },
                               children: [
                                 n.jsx(qt, { user: x, size: 48 }),
@@ -16757,7 +16764,7 @@ const yp = ["", "INTJ", "INTP", "ENTJ", "ENTP", "INFJ", "INFP", "ENFJ", "ENFP", 
     "🪫",
     "🔌",
   ];
-function Fv({ uid: r, viewerId: u, onClose: o }) {
+function Fv({ uid: r, viewerId: u, onClose: o, onMessage: sendMessage }) {
   const [c, m] = p.useState(null),
     [d, h] = p.useState("");
   return (
@@ -16768,24 +16775,31 @@ function Fv({ uid: r, viewerId: u, onClose: o }) {
         })
         .catch(() => h("加载失败"));
     }, [r, u]),
+    p.useEffect(() => {
+      const closeOnEscape = (v) => v.key === "Escape" && o();
+      window.addEventListener("keydown", closeOnEscape);
+      return () => window.removeEventListener("keydown", closeOnEscape);
+    }, [o]),
     n.jsx("div", {
-      className: "chat-info-overlay",
+      className: "friend-profile-overlay",
       style: { zIndex: 120 },
       onMouseDown: (v) => {
         v.target === v.currentTarget && o();
       },
       children: n.jsxs("div", {
-        className: "chat-info-panel",
+        className: "friend-profile-modal",
         children: [
-          n.jsxs("div", { className: "chat-info-header", children: [n.jsx("button", { className: "back-button", onClick: o, children: "←" }), n.jsx("h2", { children: "TA 的主页" })] }),
+          n.jsx("button", { className: "friend-profile-close", onClick: o, "aria-label": "关闭", children: "×" }),
+          n.jsx("h2", { className: "friend-profile-title", children: "TA 的主页" }),
           n.jsxs("div", {
-            className: "chat-info-body",
+            className: "friend-profile-body",
             children: [
-              !c && n.jsx("div", { className: "chat-loading", children: d || "加载中…" }),
+              !c && !d && n.jsx("div", { className: "chat-loading", children: "加载中…" }),
+              !c && d && n.jsxs("div", { className: "friend-profile-private", children: [n.jsx("span", { children: "🔒" }), n.jsx("h3", { children: "主页暂不可见" }), n.jsx("p", { children: "对方还没有开放公开主页，但你仍然可以发消息问候。" })] }),
               c &&
                 n.jsxs(n.Fragment, {
                   children: [
-                    n.jsxs("div", { className: "chat-info-profile", children: [n.jsx(qt, { user: { avatar: c.user.avatar, avatarType: c.user.avatarType, id: c.user.id }, size: 56 }), n.jsx("b", { children: c.user.nickname })] }),
+                    n.jsxs("div", { className: "friend-profile-head", children: [n.jsx(qt, { user: { avatar: c.user.avatar, avatarType: c.user.avatarType, id: c.user.id }, size: 72 }), n.jsxs("div", { children: [n.jsx("b", { children: c.user.nickname }), n.jsxs("div", { className: "friend-profile-id", children: [n.jsx("span", { children: c.user.id }), n.jsx("button", { onClick: () => Wi(c.user.id), children: "复制" })] })] })] }),
                     c.posts.length === 0 && n.jsxs("div", { className: "empty compact", children: [n.jsx("span", { children: "🌱" }), n.jsx("p", { children: "还没有公开帖子" })] }),
                     c.posts.map((v) =>
                       n.jsxs(
@@ -16801,6 +16815,7 @@ function Fv({ uid: r, viewerId: u, onClose: o }) {
                 }),
             ],
           }),
+          n.jsx("div", { className: "friend-profile-actions", children: n.jsx("button", { className: "primary", onClick: () => sendMessage(c ? c.user : { id: r, nickname: "好友", avatar: "🌿", avatarType: "char" }), children: "发消息" }) }),
         ],
       }),
     })
