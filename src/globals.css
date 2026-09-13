@@ -336,3 +336,15 @@ button:active{opacity:.7;transform:scale(.98)}
 .friend-profile-actions{flex:0 0 auto;padding-top:16px;border-top:1px solid var(--ios-separator)}.friend-profile-actions .primary{width:100%}
 .profile-view-post{padding:16px 0;border-bottom:1px solid var(--ios-separator)}
 @media(max-width:560px){.friend-profile-modal{width:min(420px,94vw);padding:24px 16px}.publish-mode-toggle .mode-btn small{display:none}}
+
+/* Publish-only iOS segmented mood selector */
+.publish-mood-fieldset{min-width:0;margin:24px 0}
+.publish-mood-fieldset legend{margin-bottom:12px}
+.mood-segment-scroll{width:100%;overflow-x:auto;overflow-y:hidden;padding-bottom:4px;-webkit-overflow-scrolling:touch;scrollbar-width:none;overscroll-behavior-x:contain}
+.mood-segment-scroll::-webkit-scrollbar{display:none}
+.mood-segment-control{--segment-width:92px;position:relative;display:grid;grid-auto-flow:column;grid-auto-columns:var(--segment-width);width:max-content;min-width:100%;padding:4px;border-radius:16px;background:#F2F2F7;isolation:isolate}
+.mood-segment-indicator{position:absolute;z-index:0;left:4px;top:4px;width:var(--segment-width);height:44px;border-radius:12px;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.12);transform:translateX(calc(var(--segment-index) * var(--segment-width)));transition:transform 220ms cubic-bezier(.2,.8,.2,1)}
+.mood-segment-control button{position:relative;z-index:1;width:var(--segment-width);height:44px;min-height:44px;padding:0 12px;border:0;border-radius:12px;background:transparent;color:#636366;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue",sans-serif;font-size:13px;font-weight:500;white-space:nowrap;box-shadow:none}
+.mood-segment-control button.chosen{color:var(--ink);font-weight:650}.mood-segment-control button:active{opacity:.7;transform:scale(.98)}
+.mood-custom-trigger{min-height:36px;margin-top:8px;padding:6px 12px;background:transparent;color:var(--sage-dark);font-size:12px}
+@media(min-width:760px){.mood-segment-control{--segment-width:104px}}

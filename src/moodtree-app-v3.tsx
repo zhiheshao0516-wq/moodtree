@@ -13764,15 +13764,21 @@ function Xv({ onCancel: r, onPublish: u, user: o, publishRoomId: c, flash: m }) 
             ],
           }),
           n.jsxs("fieldset", {
+            className: "publish-mood-fieldset",
             children: [
-              n.jsxs("legend", { children: ["这件事关于 ", n.jsx("small", { style: { fontWeight: 400, color: "#9ba19d", fontSize: "9px" }, children: "可多选" })] }),
-              n.jsxs("div", {
-                className: "choice-row",
-                children: [
-                  st.map((O) => n.jsx("button", { type: "button", className: y.includes(O) ? "chosen" : "", onClick: () => C((M) => (M.includes(O) ? (M.length > 1 ? M.filter((Q) => Q !== O) : M) : [...M, O])), children: O }, O)),
-                  !V && n.jsx("button", { type: "button", onClick: () => de(!0), children: "＋ 自定义" }),
-                ],
+              n.jsx("legend", { children: "这件事关于" }),
+              n.jsx("div", {
+                className: "mood-segment-scroll",
+                children: n.jsxs("div", {
+                  className: "mood-segment-control",
+                  style: { "--segment-index": Math.max(0, st.findIndex((O) => y.includes(O))) },
+                  children: [
+                    n.jsx("span", { className: "mood-segment-indicator", "aria-hidden": "true" }),
+                    st.map((O) => n.jsx("button", { type: "button", className: y.includes(O) ? "chosen" : "", "aria-pressed": y.includes(O), onClick: () => C([O]), children: O }, O)),
+                  ],
+                }),
               }),
+              !V && n.jsx("button", { className: "mood-custom-trigger", type: "button", onClick: () => de(!0), children: "＋ 自定义标签" }),
               V &&
                 n.jsxs("div", {
                   className: "custom-cat-row",
@@ -13782,7 +13788,7 @@ function Xv({ onCancel: r, onPublish: u, user: o, publishRoomId: c, flash: m }) 
                       type: "button",
                       onClick: () => {
                         const O = D.trim();
-                        O && (Hm(O), C((M) => (M.includes(O) ? M : [...M, O])), I(""), de(!1));
+                        O && (Hm(O), C([O]), I(""), de(!1));
                       },
                       children: "添加",
                     }),
