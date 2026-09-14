@@ -12440,10 +12440,10 @@ function Uv() {
             M.target === M.currentTarget && We(null);
           },
           children: n.jsxs("div", {
-            className: "friend-action-sheet",
+            className: "friend-action-sheet translation-panel",
             children: [
-              n.jsx("div", { className: "friend-action-header", children: n.jsxs("div", { children: [n.jsx("b", { children: "翻译结果" })] }) }),
-              n.jsx("div", { style: { padding: "4px 20px 12px", fontSize: "15px", lineHeight: 1.7, maxHeight: "40vh", overflowY: "auto", whiteSpace: "pre-wrap", wordBreak: "break-word", userSelect: "text" }, children: xa }),
+              n.jsx("div", { className: "friend-action-header translation-panel-header", children: n.jsx("b", { children: "翻译结果" }) }),
+              n.jsx("div", { className: "translation-panel-content", children: xa }),
               n.jsx("div", {
                 className: "friend-action-list",
                 children: [              n.jsxs("button", {
@@ -13188,6 +13188,7 @@ function Xv({ onCancel: r, onPublish: u, user: o, publishRoomId: c, flash: m }) 
     }
   }, [ot]);
   const st = p.useMemo(() => fp(), []);
+  const moodOptions = y[0] && !st.includes(y[0]) ? [...st, y[0]] : st;
   (p.useEffect(() => {
     qe(`/api/diaries/${o.id}`)
       .then((O) => be(O.diaries || []))
@@ -13771,14 +13772,14 @@ function Xv({ onCancel: r, onPublish: u, user: o, publishRoomId: c, flash: m }) 
                 className: "mood-segment-scroll",
                 children: n.jsxs("div", {
                   className: "mood-segment-control",
-                  style: { "--segment-index": Math.max(0, st.findIndex((O) => y.includes(O))) },
+                  style: { "--segment-index": Math.max(0, moodOptions.findIndex((O) => y.includes(O))) },
                   children: [
                     n.jsx("span", { className: "mood-segment-indicator", "aria-hidden": "true" }),
-                    st.map((O) => n.jsx("button", { type: "button", className: y.includes(O) ? "chosen" : "", "aria-pressed": y.includes(O), onClick: () => C([O]), children: O }, O)),
+                    moodOptions.map((O) => n.jsx("button", { type: "button", className: y.includes(O) ? "chosen" : "", "aria-pressed": y.includes(O), onClick: () => C([O]), children: O }, O)),
+                    n.jsx("button", { type: "button", className: "mood-segment-add", onClick: () => de(!0), "aria-label": "自定义分类", children: "+" }),
                   ],
                 }),
               }),
-              !V && n.jsx("button", { className: "mood-custom-trigger", type: "button", onClick: () => de(!0), children: "＋ 自定义标签" }),
               V &&
                 n.jsxs("div", {
                   className: "custom-cat-row",
@@ -14589,10 +14590,10 @@ function Gv({ post: r, onBack: u, react: o, update: c, user: m, onStartDM: d, fl
             se.target === se.currentTarget && pt(null);
           },
           children: n.jsxs("div", {
-            className: "friend-action-sheet",
+            className: "friend-action-sheet translation-panel",
             children: [
-              n.jsx("div", { className: "friend-action-header", children: n.jsxs("div", { children: [n.jsx("b", { children: "翻译结果" })] }) }),
-              n.jsx("div", { style: { padding: "4px 20px 12px", fontSize: "15px", lineHeight: 1.7, maxHeight: "40vh", overflowY: "auto", whiteSpace: "pre-wrap", wordBreak: "break-word", userSelect: "text" }, children: Ve }),
+              n.jsx("div", { className: "friend-action-header translation-panel-header", children: n.jsx("b", { children: "翻译结果" }) }),
+              n.jsx("div", { className: "translation-panel-content", children: Ve }),
               n.jsx("div", {
                 className: "friend-action-list",
                 children: [              n.jsxs("button", {
@@ -15533,18 +15534,18 @@ function Jv({ user: r, onBack: u, flash: o, onTextMenu: c }) {
       /* Parchment writing area */
       .bottle-parchment{background:linear-gradient(135deg,#faf3e0,#f5e6c8);border-radius:16px;padding:24px;margin-bottom:20px;box-shadow:0 2px 12px rgba(180,140,80,0.12),inset 0 0 40px rgba(180,140,80,0.06);position:relative;border:1px solid #e8d5a8}
       .bottle-parchment:before{content:"";position:absolute;top:0;left:0;right:0;bottom:0;background:url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23n)' opacity='0.22'/%3E%3C/svg%3E");pointer-events:none;border-radius:16px;opacity:1}
-      .bottle-parchment-title{font-family:Georgia,serif;font-size:15px;color:#8b7355;margin:0 0 12px;position:relative;z-index:1}
-      .bottle-parchment textarea{width:100%;border:none;border-radius:10px;padding:14px;font-size:14px;resize:none;outline:none;background:rgba(255,255,255,0.7);font-family:Georgia,serif;color:#5a4a3a;line-height:1.7;margin-bottom:10px;position:relative;z-index:1;min-height:80px}
+      .bottle-parchment-title{font-family:-apple-system,"PingFang SC","Helvetica Neue","Microsoft YaHei",sans-serif;font-size:15px;color:#8b7355;margin:0 0 12px;position:relative;z-index:1}
+      .bottle-parchment textarea{width:100%;border:none;border-radius:10px;padding:14px;font-size:14px;resize:none;outline:none;background:rgba(255,255,255,0.7);font-family:-apple-system,"PingFang SC","Helvetica Neue","Microsoft YaHei",sans-serif;color:#5a4a3a;line-height:1.7;margin-bottom:10px;position:relative;z-index:1;min-height:80px}
       .bottle-parchment textarea:focus{background:rgba(255,255,255,0.85);box-shadow:0 0 0 2px rgba(180,140,80,0.2)}
       .bottle-parchment textarea::placeholder{color:#b8a88a;font-style:italic}
       .bottle-parchment-bar{display:flex;justify-content:space-between;align-items:center;position:relative;z-index:1}
       .bottle-parchment-bar .left{display:flex;align-items:center;gap:8px}
-      .bottle-parchment-bar .left span{font-size:11px;color:#b8a88a;font-family:Georgia,serif}
+      .bottle-parchment-bar .left span{font-size:11px;color:#b8a88a;font-family:-apple-system,"PingFang SC","Helvetica Neue","Microsoft YaHei",sans-serif}
       .bottle-parchment-bar button{background:var(--sage-dark,#6f917d);color:#fff;border:none;border-radius:12px;padding:8px 20px;font-size:14px;cursor:pointer;font-family:inherit}
       .bottle-parchment-bar button:disabled{opacity:0.5;cursor:not-allowed}
       /* Color & Emoji selectors */
       .bottle-style-row{display:flex;gap:8px;align-items:center;margin-bottom:10px;position:relative;z-index:1;flex-wrap:wrap}
-      .bottle-style-label{font-size:11px;color:#8b7355;font-family:Georgia,serif;margin-right:4px}
+      .bottle-style-label{font-size:11px;color:#8b7355;font-family:-apple-system,"PingFang SC","Helvetica Neue","Microsoft YaHei",sans-serif;margin-right:4px}
       .bottle-color-swatch{width:24px;height:24px;border-radius:50%;border:2px solid transparent;cursor:pointer;transition:all 0.2s;position:relative}
       .bottle-color-swatch.selected{border-color:var(--sage-dark,#6f917d);transform:scale(1.15);box-shadow:0 0 0 3px rgba(111,145,125,0.2)}
       .bottle-color-swatch:hover{transform:scale(1.1)}
@@ -15590,7 +15591,7 @@ function Jv({ user: r, onBack: u, flash: o, onTextMenu: c }) {
       .bottle-card{background:linear-gradient(135deg,#faf3e0,#f5e6c8);border:1px solid #e8d5a8}
       .bottle-card:before{content:"";position:absolute;top:0;left:0;right:0;bottom:0;background:url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23n)' opacity='0.28'/%3E%3C/svg%3E");pointer-events:none;border-radius:16px;opacity:1}
       .bottle-card:hover{box-shadow:0 4px 16px rgba(180,140,80,0.15);transform:translateY(-1px)}
-      .bottle-card-content{font-size:14px;line-height:1.7;color:#5a4a3a;margin-bottom:8px;white-space:pre-wrap;font-family:Georgia,serif}
+      .bottle-card-content{font-size:14px;line-height:1.7;color:#5a4a3a;margin-bottom:8px;white-space:pre-wrap;font-family:-apple-system,"PingFang SC","Helvetica Neue","Microsoft YaHei",sans-serif}
       .bottle-card-footer{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px}
       .bottle-card-time{font-size:10px;color:var(--muted)}
       .bottle-card-actions{display:flex;gap:6px;align-items:center}
@@ -15606,7 +15607,7 @@ function Jv({ user: r, onBack: u, flash: o, onTextMenu: c }) {
       .bottle-reply-modal{background:#fff;border-radius:20px;padding:24px;width:100%;max-width:400px;max-height:70vh;overflow-y:auto;animation:bottleSlideUp 0.3s ease}
       @keyframes bottleSlideUp{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
       .bottle-reply-modal h3{margin:0 0 6px;font-size:16px;color:var(--sage-dark,#6f917d)}
-      .bottle-reply-modal .original{font-size:13px;color:#666;line-height:1.6;padding:12px;background:#f9f6f0;border-radius:10px;margin-bottom:12px;font-family:Georgia,serif}
+      .bottle-reply-modal .original{font-size:13px;color:#666;line-height:1.6;padding:12px;background:#f9f6f0;border-radius:10px;margin-bottom:12px;font-family:-apple-system,"PingFang SC","Helvetica Neue","Microsoft YaHei",sans-serif}
       .bottle-reply-modal textarea{width:100%;border:1px solid #e0e0e0;border-radius:10px;padding:10px;font-size:13px;resize:none;outline:none;font-family:inherit;min-height:60px;margin-bottom:10px}
       .bottle-reply-modal textarea:focus{border-color:var(--sage,#6f917d)}
       .bottle-reply-bar{display:flex;justify-content:flex-end;gap:8px}
@@ -15618,7 +15619,7 @@ function Jv({ user: r, onBack: u, flash: o, onTextMenu: c }) {
       .bottle-replies-view{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px}
       .bottle-replies-panel{background:#fff;border-radius:20px;padding:24px;width:100%;max-width:400px;max-height:75vh;overflow-y:auto}
       .bottle-replies-panel h3{margin:0 0 4px;font-size:16px;color:var(--sage-dark,#6f917d)}
-      .bottle-replies-panel .bottle-original{font-size:13px;color:#666;padding:12px;background:#f9f6f0;border-radius:10px;margin-bottom:14px;font-family:Georgia,serif}
+      .bottle-replies-panel .bottle-original{font-size:13px;color:#666;padding:12px;background:#f9f6f0;border-radius:10px;margin-bottom:14px;font-family:-apple-system,"PingFang SC","Helvetica Neue","Microsoft YaHei",sans-serif}
       .bottle-reply-item{padding:10px 0;border-bottom:1px solid #f0f0f0}
       .bottle-reply-item:last-child{border:none}
       .bottle-reply-item p{font-size:13px;color:#333;margin:0 0 4px;line-height:1.5}
@@ -15629,7 +15630,7 @@ function Jv({ user: r, onBack: u, flash: o, onTextMenu: c }) {
       .bottle-mine-card:hover{box-shadow:0 3px 12px rgba(0,0,0,0.08)}
       .bottle-mine-card .top-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
       .bottle-mine-card .bottle-tag{font-size:10px;padding:2px 8px;border-radius:8px;color:#fff}
-      .bottle-mine-card .bottle-mine-content{font-size:13px;color:#333;line-height:1.6;font-family:Georgia,serif;white-space:pre-wrap}
+      .bottle-mine-card .bottle-mine-content{font-size:13px;color:#333;line-height:1.6;font-family:-apple-system,"PingFang SC","Helvetica Neue","Microsoft YaHei",sans-serif;white-space:pre-wrap}
       .bottle-mine-card .bottle-mine-footer{display:flex;gap:12px;margin-top:8px;font-size:10px;color:var(--muted)}
       /* Mobile responsive */
       @media (max-width: 480px) {
@@ -17829,6 +17830,14 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
           onClick: () => fe(null),
           children: n.jsx("div", {
             className: "msg-action-menu",
+            style: (() => {
+              const message = document.querySelector(`[data-msg-id="${le.id}"]`),
+                rect = message == null ? null : message.getBoundingClientRect(),
+                width = Math.min(360, window.innerWidth - 24),
+                left = rect ? Math.max(12, Math.min(rect.left + rect.width / 2 - width / 2, window.innerWidth - width - 12)) : Math.max(12, (window.innerWidth - width) / 2),
+                top = rect ? (rect.top >= 112 ? rect.top - 88 : Math.min(window.innerHeight - 96, rect.bottom + 8)) : Math.max(72, window.innerHeight / 2 - 48);
+              return { position: "fixed", width, left, top };
+            })(),
             onClick: (z) => z.stopPropagation(),
             children: n.jsxs("div", {
               className: "msg-action-row",
@@ -19050,6 +19059,7 @@ function e0({ posts: r, openPost: u, user: o, onSignOut: c, onEditProfile: m, on
         children: [
           n.jsx(qt, { user: o, size: 66 }),
           n.jsxs("div", {
+            className: "profile-card-copy",
             children: [
               n.jsx("span", { children: "MY MOODTREE" }),
               n.jsx("h1", { children: o.nickname }),
@@ -19300,7 +19310,7 @@ function e0({ posts: r, openPost: u, user: o, onSignOut: c, onEditProfile: m, on
                         n.jsxs(n.Fragment, {
                           children: [
                             n.jsxs("div", {
-                              className: "settings-item",
+                                className: "settings-item visitors-footprint-row",
                               style: { cursor: "default" },
                               children: [
                                 n.jsxs("span", { children: [n.jsx("b", { children: "👣 浏览足迹" }), n.jsx("small", { children: Jt ? "已关闭：你看别人不留痕，也看不到访客" : "开启中：你看过的帖子会留下足迹" })] }),
@@ -19610,32 +19620,27 @@ function e0({ posts: r, openPost: u, user: o, onSignOut: c, onEditProfile: m, on
                                         "div",
                                         {
                                           className: `friend-item ${St.includes(g.id) ? "pinned" : ""}`,
-                                          style: { cursor: "pointer", display: "flex", alignItems: "center" },
-                                          onClick: () => d(g),
-                                          children: n.jsxs("div", {
-                                            onClick: (ne) => {
-                                              if ((ne.stopPropagation(), Dt.current)) {
-                                                Dt.current = !1;
-                                                return;
-                                              }
-                                              H && H(g.id);
-                                            },
-                                            onTouchStart: () => Qe(g),
-                                            onTouchEnd: Ge,
-                                            onTouchMove: Ge,
-                                            onContextMenu: (ne) => {
-                                              (ne.preventDefault(), ve(g));
-                                            },
-                                            style: { cursor: "pointer", display: "flex", alignItems: "center", gap: "12px" },
-                                            children: [
-                                              n.jsx(qt, { user: g, size: 42 }),
+                                          style: { cursor: "pointer", display: "flex", alignItems: "center", gap: "12px" },
+                                          onClick: () => {
+                                            if (Dt.current) { Dt.current = !1; return; }
+                                            d(g);
+                                          },
+                                          onTouchStart: () => Qe(g),
+                                          onTouchEnd: Ge,
+                                          onTouchMove: Ge,
+                                          onContextMenu: (ne) => { ne.preventDefault(); ve(g); },
+                                          children: [
+                                            n.jsx("span", {
+                                              className: "friend-avatar-hitarea",
+                                              onClick: (ne) => { ne.stopPropagation(); H && H(g.id); },
+                                              children: n.jsx(qt, { user: g, size: 42 }),
+                                            }),
                                               St.includes(g.id) && n.jsx("span", { className: "pin-indicator", children: "📌" }),
                                               n.jsxs("div", {
                                                 className: "friend-info-text",
                                                 children: [n.jsx("b", { children: g.alias || g.nickname }), g.alias && n.jsxs("small", { className: "friend-origin-name", children: ["原昵称: ", g.nickname] }), n.jsx("small", { children: g.id })],
                                               }),
                                             ],
-                                          }),
                                         },
                                         g.id,
                                       ),
@@ -19999,6 +20004,7 @@ function e0({ posts: r, openPost: u, user: o, onSignOut: c, onEditProfile: m, on
                                     }),
                                     ne
                                       ? n.jsxs("p", {
+                                          className: "ban-info-lines",
                                           style: { fontSize: "12px", color: "var(--muted)", lineHeight: 1.6 },
                                           children: [
                                             "封禁原因：",
