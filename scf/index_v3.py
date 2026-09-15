@@ -1604,14 +1604,25 @@ def translate_text(text, target=''):
     if not text.strip():
         return {'error': 'Empty text'}
     target = target if target in TRANSLATION_LANGUAGES else 'zh'
+    if not DEEPSEEK_API_KEY:
+        return {'error': 'Translation failed: DeepSeek API key is not configured'}
     try:
-        url = f'https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl={target}&dt=t&q={urllib.parse.quote(text[:500])}'
-        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-        resp = urllib.request.urlopen(req, timeout=10)
-        result = json.loads(resp.read())
-        translated = ''.join(item[0] for item in result[0])
-        source_lang = result[2] if len(result) > 2 else 'auto'
-        return {'translated': translated, 'source': source_lang, 'target': target}
+        language_name = TRANSLATION_LANGUAGES[target]
+        payload = json.dumps({
+            'model': 'deepseek-chat',
+            'messages': [
+                {'role': 'system', 'content': f'你是一名专业翻译。请把用户提供的内容忠实、自然地翻译成{language_name}。只输出译文本身，不要解释，不要加引号，不要添加任何前缀或后缀。'},
+                {'role': 'user', 'content': text[:4000]}
+            ],
+            'max_tokens': 2000,
+            'temperature': 0.1
+        }, ensure_ascii=False).encode('utf-8')
+        req = urllib.request.Request(
+            'https://api.deepseek.com/v1/chat/completions', data=payload,
+            headers={'Content-Type': 'application/json', 'Authorization': f'Bearer {DEEPSEEK_API_KEY}'}, method='POST')
+        result = json.loads(urllib.request.urlopen(req, timeout=25).read().decode('utf-8'))
+        translated = result['choices'][0]['message']['content'].strip()
+        return {'translated': translated, 'source': 'auto', 'target': target}
     except Exception as e:
         return {'error': f'Translation failed: {str(e)}'}
 
