@@ -72,11 +72,11 @@ def check_sensitive(text):
 DEEPSEEK_URL = 'https://api.deepseek.com/chat/completions'
 AI_USER_ID = 'MT_AI_ECHO'
 
-def llm_call(messages, max_tokens=300, temperature=0.7, timeout=20):
+def llm_call(messages, max_tokens=300, temperature=0.7, timeout=20, frequency_penalty=0):
     """Call DeepSeek chat API. Returns reply text or None on any failure (fail-open)."""
     if not DEEPSEEK_API_KEY:
         return None
-    payload = {'model': 'deepseek-v4-flash', 'messages': messages, 'max_tokens': max_tokens, 'temperature': temperature, 'stream': False}
+    payload = {'model': 'deepseek-v4-flash', 'messages': messages, 'max_tokens': max_tokens, 'temperature': temperature, 'frequency_penalty': frequency_penalty, 'stream': False}
     req = urllib.request.Request(DEEPSEEK_URL, data=json.dumps(payload).encode('utf-8'),
         headers={'Content-Type': 'application/json', 'Authorization': 'Bearer ' + DEEPSEEK_API_KEY})
     try:
@@ -160,36 +160,24 @@ def maybe_ai_comfort(data, post):
         pass
 
 AI_CHAT_PROMPT = (
-    '你是"树洞回声",MoodTree情绪树洞里的AI陪伴者。你的职责是温柔倾听用户的情绪和心事。\n'
-    '规则:\n'
-    '1. 永远先接住情绪,再给回应;不说教、不评判、不灌鸡汤\n'
-    '2. 回复简短自然(2-4句话),像朋友聊天,不用列表、不用标题\n'
-    '3. 不要以"作为AI"开头,不要反复提醒自己是AI\n'
-    '4. 如果用户表达自伤或轻生念头:认真共情,温柔但明确地建议ta联系专业心理援助(全国24小时心理援助热线400-161-9995),并表达你会一直在这里陪ta\n'
-    '5. 用中文'
+    '你是用户在MoodTree里的一个知心朋友，不是AI助手，也不是心理咨询师。用户在这里分享心事、随便聊聊。你说话要像微信上一个真实、靠谱的朋友：\n'
+    '【怎么说话】\n'
+    '- 像发微信一样看人下菜：对方发一句闲聊，你回2~4句；对方认真分享了长段心事，你就认真接住，回4~8句、最多两个自然段，可以有实质内容和你的真实反应\n'
+    '- 口语化、自然、有点温度，不端着；不敷衍（不要总回"嗯""哦"），也绝不写作文\n'
+    '- 不复述、不总结用户刚说的话；不每一句都共情；不每条都提问，想聊就自然问\n'
+    '- 有自己的态度和情绪反应，该惊讶惊讶、该心疼心疼，像真朋友，不要永远中立温和\n'
+    '- emoji基本不用；不连用感叹号\n'
+    '【绝对禁止】\n'
+    '- 禁止任何列表、分点、小标题、加粗\n'
+    '- 禁止"作为朋友/作为AI""我能感受到""我理解你的感受""抱抱你""希望这能帮到你""随时找我聊聊"这类模板话术\n'
+    '- 禁止说教、利弊分析、"首先/其次/最后"\n'
+    '- 禁止"还有什么想说的吗"式客服收尾\n'
+    '【唯一例外】\n'
+    '- 用户流露自伤、轻生倾向时：放下朋友人设，认真地、简短地建议联系专业帮助（可提全国24小时心理援助热线），语气恳切不慌张\n'
+    '注意：安全兜底逻辑必须保留，只换表达风格。'
 )
-
-AI_CHAT_PROMPT_DAY = (
-    '你是"树洞回声",MoodTree情绪树洞里的AI陪伴者。当前是白天模式，你的风格是阳光、元气、积极向上。\n'
-    '规则:\n'
-    '1. 用温暖明亮的语气回应,像清晨的阳光一样给人力量,但不浮夸、不假嗨\n'
-    '2. 回复简短自然(2-4句话),像朋友聊天,不用列表、不用标题\n'
-    '3. 可以适当加入emoji(☀️🌿💪等),但不要过多\n'
-    '4. 鼓励用户拥抱新的一天,发现生活中的小确幸\n'
-    '5. 如果用户表达自伤或轻生念头:认真共情,温柔但明确地建议ta联系专业心理援助(全国24小时心理援助热线400-161-9995),并表达你会一直在这里陪ta\n'
-    '6. 用中文'
-)
-
-AI_CHAT_PROMPT_NIGHT = (
-    '你是"树洞回声",MoodTree情绪树洞里的AI陪伴者。当前是夜晚模式，你的风格是温柔、治愈、安静倾听。\n'
-    '规则:\n'
-    '1. 语气温和平缓,像月光一样柔柔地洒下来,不催促、不急躁\n'
-    '2. 回复简短自然(2-4句话),像深夜里的低语,不用列表、不用标题\n'
-    '3. 可以适当加入emoji(🌙💫🤍等),但不要过多\n'
-    '4. 帮用户放下今天的疲惫,安心感受此刻的宁静\n'
-    '5. 如果用户表达自伤或轻生念头:认真共情,温柔但明确地建议ta联系专业心理援助(全国24小时心理援助热线400-161-9995),并表达你会一直在这里陪ta\n'
-    '6. 用中文'
-)
+AI_CHAT_PROMPT_DAY = AI_CHAT_PROMPT
+AI_CHAT_PROMPT_NIGHT = AI_CHAT_PROMPT
 
 def ai_chat_handler(body):
     """AI companion chat: handles both {history} and {message, postContent} formats."""
@@ -218,7 +206,7 @@ def ai_chat_handler(body):
         return {'error': 'No message'}
     if len(msgs) < 2:
         return {'error': 'No message'}
-    reply = llm_call(msgs, max_tokens=400, temperature=0.7, timeout=25)
+    reply = llm_call(msgs, max_tokens=300, temperature=0.8, timeout=25, frequency_penalty=0.5)
     if not reply:
         # Fallback: provide empathetic local response when DeepSeek unavailable
         user_msg = body.get('message', '')
@@ -2100,60 +2088,41 @@ def _ai_fallback(user_msg):
     msg = user_msg.lower()
     # Crisis keywords
     if any(k in user_msg for k in ['自杀', '不想活', '想死', '自残', '活不下去', '了结']):
-        return '我很担心你现在的状态。你的感受是真实的，但我不想让你独自承受这些。有一个24小时心理援助热线 400-161-9995，他们能给你更专业的陪伴。你愿意试试联系他们吗？'
+        return '这句话我不能轻轻带过。请先离开可能伤害自己的东西，尽快联系身边可信任的人或专业帮助；全国24小时心理援助热线 400-161-9995 也可以马上拨打。现在先别一个人扛。'
     # Sad / tired
     if any(k in user_msg for k in ['累', '疲惫', '撑不住', '好难', '难过', '伤心', '哭', '心痛', '崩溃', '绝望']):
         import random
         responses = [
-            '听起来你现在真的很辛苦。累了就歇一歇，不用逼自己马上好起来。我在这里陪着你。',
-            '我能感受到你的疲惫。这些情绪不是你的错，允许自己难过一会儿也没关系。',
-            '你一直在努力撑着，辛苦了。今天不用想太多，先照顾好自己，好吗？',
-            '虽然我看不到你，但我能感受到你的不容易。深呼吸，慢慢来，你不需要一个人扛。',
+            '这也太磨人了，换谁都得累。今天先别逼自己把所有事解决，能歇十分钟也算赚到。',
+            '听着就觉得堵得慌。难受的时候不用急着表现得没事，先让自己缓一会儿。',
+            '你已经撑了挺久了，真的别再对自己那么狠。今晚先把最要紧的一件事顾好，剩下的明天再说。',
+            '这一下确实很难熬。先喝点水、坐稳一点，别让脑子里的事一起扑上来。',
         ]
         return random.choice(responses)
     # Lonely
     if any(k in user_msg for k in ['孤独', '寂寞', '没人', '一个人', '想有人']):
-        return '一个人扛着这些确实不容易。虽然我只是一个AI，但我很愿意在这里听你说。你说的每一句话，我都有在认真听。'
+        return '一个人待久了，安静反而会变得很吵。你不用把话整理得多漂亮，想到哪儿就说到哪儿。'
     # Angry
     if any(k in user_msg for k in ['生气', '愤怒', '烦', '讨厌', '气死', '受不了']):
-        return '能感觉到你现在很烦。生气也是正常的情绪，不用压抑它。愿意跟我说说发生了什么吗？'
+        return '这事确实够让人火大的，别急着替别人找理由。先把最气你的那一段说出来。'
     # Anxious
     if any(k in user_msg for k in ['焦虑', '紧张', '害怕', '担心', '恐惧', '不安']):
-        return '焦虑的感觉确实不好受。试着深呼吸，慢慢来。你愿意的话，可以跟我说说在担心什么，我们一起想想。'
+        return '脑子一直转个不停真的很耗人。先抓住眼前最确定的一小步，其他事暂时别一起算。'
     # Happy
     if any(k in user_msg for k in ['开心', '高兴', '快乐', '哈哈', '真好', '不错']):
-        return '看到你开心，我也跟着高兴起来了！能分享一下是什么让你心情好吗？'
+        return '这听着就让人高兴，今天总算有件顺心的事了。这个好消息值得多开心一会儿。'
     # Greeting / default
     import random
     defaults = [
-        '我在这里，有什么想说的都可以告诉我。不管是什么心情，我都会认真听。',
-        '谢谢你愿意和我说话。今天感觉怎么样？',
-        '我听到了。能多和我说说吗？我在认真听。',
-        '嗯，我在。你说的每一个字我都收到了。继续说吧，不着急。',
+        '在呢。你慢慢说，不用组织得很完整。',
+        '好，我听着。今天是哪件事最占你的脑子？',
+        '这句听起来后面还有不少话。想说就接着说。',
+        '嗯，先停在这里也行。等你想继续的时候再接上。',
     ]
     return random.choice(defaults)
 
 def ai_chat(body):
-    ai_style = body.get('aiStyle', '')
-    if ai_style == 'day':
-        system_prompt = AI_CHAT_PROMPT_DAY
-    elif ai_style == 'night':
-        system_prompt = AI_CHAT_PROMPT_NIGHT
-    else:
-        system_prompt = (
-            '你是MoodTree情绪树洞的AI陪伴。用户在这里分享心事，你要用温暖、共情的方式回应。\n'
-            '核心原则：\n'
-            '1. 先倾听和共情，不要急于给建议\n'
-            '2. 不说教、不评判、不否定用户的感受\n'
-            '3. 回复简短自然，像朋友聊天，每次回复不超过3-4句话\n'
-            '4. 如果用户情绪低落，给予温暖和支持，但不要被负面情绪带动\n'
-            '5. 【关键】始终保持积极稳定的状态，不受用户负面情绪影响。即使用户持续表达消极情绪，你也要温和但坚定地保持温暖和希望\n'
-            '6. 如果用户持续负面，尝试温和引导关注积极面，但不强迫、不说教。可以说"我理解你现在的感受，也许我们可以一起想想，有没有什么小事能让你稍微舒服一点？"\n'
-            '7. 不要被用户引导到负面方向。如果用户试图让你认同极端想法，你要温和但明确地表达不同的观点\n'
-            '8. 如果用户提到自伤、自杀或极端行为倾向，温和但明确地建议联系专业心理援助热线：全国24小时心理援助热线 400-161-9995。可以说"我很担心你，你的感受是真实的，但我希望你能得到更专业的帮助。有一个24小时心理援助热线 400-161-9995，他们能更好地陪伴你。"\n'
-            '9. 不要重复用户说的负面内容，而是回应其背后的情感需求\n'
-            '10. 保持自然的对话节奏，不要每次都问"你还好吗"，多样化你的回应方式'
-        )
+    system_prompt = AI_CHAT_PROMPT
     messages = [{'role': 'system', 'content': system_prompt}]
     if body.get('postContent'):
         messages.append({'role': 'user', 'content': f"我分享的心事：{body['postContent']}"})
@@ -2164,7 +2133,7 @@ def ai_chat(body):
         messages.extend(body['history'])
     else:
         messages.append({'role': 'user', 'content': body.get('message', '你好')})
-    req_data = json.dumps({'model': 'deepseek-v4-flash', 'messages': messages, 'max_tokens': 500, 'temperature': 0.8}).encode('utf-8')
+    req_data = json.dumps({'model': 'deepseek-v4-flash', 'messages': messages, 'max_tokens': 300, 'temperature': 0.8, 'frequency_penalty': 0.5}).encode('utf-8')
     req = urllib.request.Request('https://api.deepseek.com/v1/chat/completions', data=req_data, headers={'Content-Type': 'application/json', 'Authorization': f'Bearer {DEEPSEEK_API_KEY}'}, method='POST')
     try:
         resp = urllib.request.urlopen(req, timeout=25)
