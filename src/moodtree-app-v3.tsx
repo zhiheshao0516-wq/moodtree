@@ -11795,6 +11795,7 @@ function Uv() {
     [Mt, zt] = p.useState(0),
     [$e, jt] = p.useState(null),
     [xa, We] = p.useState(null),
+    [selectionAi, setSelectionAi] = p.useState(null),
     It = (M, Q, oe) => jt({ text: M, x: Q ?? window.innerWidth / 2, y: oe ?? 240, src: "hold" }),
     Xt = () => {
       var Q;
@@ -11815,7 +11816,7 @@ function Uv() {
         me("翻译中…");
         try {
           const Q = await Au(M);
-          Q ? We(Q) : me("翻译失败");
+          Q ? We({ text: Q.translated, target: Q.target, sourceText: M }) : me("翻译失败");
         } catch {
           me("翻译失败，请重试");
         }
@@ -11851,7 +11852,8 @@ function Uv() {
         var _e;
         const Ue = Q();
         if (!Ue) {
-          ((oe = ""), (Zt.current = ""), ((_e = Dt.current) == null ? void 0 : _e.src) === "sel" && jt(null));
+          oe = "";
+          if (!Dt.current) Zt.current = "";
           return;
         }
         Ue.text !== Zt.current &&
@@ -11865,17 +11867,27 @@ function Uv() {
               }, 450)))));
       }, 400),
       De = () => {
-        var _e;
-        const Ue = ((_e = window.getSelection()) == null ? void 0 : _e.toString().trim()) || "";
-        Dt.current && Ue && Ue !== Dt.current.text && jt(null);
+        clearTimeout(M);
+        M = setTimeout(() => {
+          const Ue = Q();
+          Ue && jt((Le) => (Le ? { ...Le, text: Ue.text, x: Ue.x, y: Ue.y } : { ...Ue, src: "sel" }));
+        }, 280);
+      },
+      Ue = (Le) => {
+        const _e = window.getSelection();
+        ((_e && _e.toString().trim()) || Dt.current) && Le.preventDefault();
       };
     return (
       document.addEventListener("selectionchange", De),
+      document.addEventListener("contextmenu", Ue),
       () => {
-        (clearTimeout(M), clearInterval(Ne), document.removeEventListener("selectionchange", De));
+        (clearTimeout(M), clearInterval(Ne), document.removeEventListener("selectionchange", De), document.removeEventListener("contextmenu", Ue));
       }
     );
   }, []),
+    p.useEffect(() => {
+      getDefaultTranslationLanguage().catch(() => {});
+    }, []),
     p.useEffect(() => {
       Av(() => {
         (X(null), U("home"), me("登录已过期，请重新登录"), D(!0));
@@ -12432,6 +12444,39 @@ function Uv() {
             onAvatarClick: Pe,
           }),
         }),
+      $e &&
+        n.jsxs(n.Fragment, {
+          children: [
+            n.jsx("div", { className: "selection-menu-backdrop", onPointerDown: Ya }),
+            n.jsx("div", {
+              className: "selection-menu",
+              style: { left: Math.max(8, Math.min($e.x - 170, window.innerWidth - 348)), top: Math.max(12, $e.y < 92 ? $e.y + 28 : $e.y - 76) },
+              onPointerDown: (M) => { M.preventDefault(); M.stopPropagation(); },
+              children: n.jsx("div", {
+                className: "selection-menu-row",
+                children: [
+                  ["复制", Rt],
+                  ["搜索", () => { const M = Xt(); Ya(); M && window.open(`https://www.baidu.com/s?wd=${encodeURIComponent(M)}`, "_blank", "noopener,noreferrer"); }],
+                  ["问AI", async () => { const M = Xt(); Ya(); if (!M) return; me("正在问AI…"); const Q = await pe("/api/ai/chat", { message: `请用简洁自然的话解释或回应这段内容：${M}` }); setSelectionAi(Q.reply || Q.error || "暂时没有得到回复"); }],
+                  ["扩选", () => {
+                    try {
+                      const M = window.getSelection();
+                      if (M && M.rangeCount) {
+                        if (typeof M.modify === "function") { M.modify("extend", "backward", "sentence"); M.modify("extend", "forward", "sentence"); }
+                        else { const Q = M.getRangeAt(0); Q.selectNodeContents(Q.commonAncestorContainer.nodeType === 3 ? Q.commonAncestorContainer.parentNode : Q.commonAncestorContainer); M.removeAllRanges(); M.addRange(Q); }
+                        const Q = M.toString().trim(), oe = M.getRangeAt(0).getBoundingClientRect();
+                        Q && jt({ text: Q, x: oe.left + oe.width / 2, y: oe.top, src: "sel" });
+                      } else jt((Q) => Q && { ...Q, text: Q.text });
+                    } catch { me("扩选失败，请重试"); }
+                  }],
+                  ["翻译", Gt],
+                  ["分享", async () => { const M = Xt(); Ya(); if (!M) return; try { navigator.share ? await navigator.share({ text: M }) : (await Wi(M), me("内容已复制，可粘贴分享")); } catch {} }],
+                ].map(([M, Q]) => n.jsx("button", { type: "button", onClick: Q, children: M }, M)),
+              }),
+            }),
+          ],
+        }),
+      selectionAi && n.jsx("div", { className: "friend-action-overlay", style: { zIndex: 99999 }, onPointerDown: (M) => M.target === M.currentTarget && setSelectionAi(null), children: n.jsxs("div", { className: "friend-action-sheet translation-panel", children: [n.jsx("div", { className: "friend-action-header translation-panel-header", children: n.jsx("b", { children: "AI 回应" }) }), n.jsx("div", { className: "translation-panel-content", children: selectionAi }), n.jsx("button", { className: "friend-action-cancel", onClick: () => setSelectionAi(null), children: "关闭" })] }) }),
       xa &&
         n.jsx("div", {
           className: "friend-action-overlay",
@@ -12443,7 +12488,8 @@ function Uv() {
             className: "friend-action-sheet translation-panel",
             children: [
               n.jsx("div", { className: "friend-action-header translation-panel-header", children: n.jsx("b", { children: "翻译结果" }) }),
-              n.jsx("div", { className: "translation-panel-content", children: xa }),
+              n.jsx("div", { className: `translation-panel-content${xa.loading ? " is-loading" : ""}`, children: xa.text }),
+              n.jsx("div", { className: "translation-language-strip", children: TRANSLATION_LANGUAGES.map((M) => n.jsx("button", { className: xa.target === M.code ? "active" : "", disabled: xa.loading, onClick: async () => { We((Q) => ({ ...Q, loading: !0, target: M.code })); const Q = await Au(xa.sourceText, 500, M.code); We({ text: Q.translated, target: Q.target, sourceText: xa.sourceText, loading: !1 }); }, children: M.label }, M.code)) }),
               n.jsx("div", {
                 className: "friend-action-list",
                 children: [              n.jsxs("button", {
@@ -12479,7 +12525,7 @@ function Uv() {
 n.jsxs("button", {
                   onClick: async () => {
                     try {
-                      (await Wi(xa), me("已复制译文"));
+                      (await Wi(xa.text), me("已复制译文"));
                     } catch {
                       me("复制失败");
                     }
@@ -13933,8 +13979,7 @@ function Gv({ post: r, onBack: u, react: o, update: c, user: m, onStartDM: d, fl
       if ((se = window.getSelection()) != null && se.toString().trim()) {
         const R = se.getRangeAt(0).getBoundingClientRect();
         if (R && (R.width > 0 || R.height > 0)) {
-          Ee({ x: R.left + R.width / 2, y: R.top });
-          ee(!0);
+          C == null || C(se.toString().trim(), R.left + R.width / 2, R.top);
         }
       }
     },
@@ -13946,8 +13991,7 @@ function Gv({ post: r, onBack: u, react: o, update: c, user: m, onStartDM: d, fl
           if (txt.length > 0 && sel && sel.rangeCount > 0) {
             const rect = sel.getRangeAt(0).getBoundingClientRect();
             if (rect && (rect.width > 0 || rect.height > 0)) {
-              Ee({ x: rect.left + rect.width / 2, y: rect.top });
-              ee(!0);
+              C == null || C(txt, rect.left + rect.width / 2, rect.top);
             }
           }
         } catch {}
@@ -13979,7 +14023,7 @@ function Gv({ post: r, onBack: u, react: o, update: c, user: m, onStartDM: d, fl
         h("翻译中…");
         try {
           const ct = await Au(ge);
-          ct ? pt(ct) : h("翻译失败");
+          ct ? pt({ text: ct.translated, target: ct.target, sourceText: ge }) : h("翻译失败");
         } catch {
           h("翻译失败，请重试");
         }
@@ -14189,23 +14233,23 @@ function Gv({ post: r, onBack: u, react: o, update: c, user: m, onStartDM: d, fl
               n.jsx("button", { className: r.saved ? "saved" : "", onClick: () => o(r.id, "saved"), children: r.saved ? "◆ 已收藏" : "◇ 收藏" }),
               Ne &&
                 n.jsx("button", {
+                  className: "detail-action-secondary",
                   onClick: () => {
                     (gt("post"), fa(r.id), st(r.authorId || ""), zt(r.author), We(!0));
                   },
-                  style: { background: "none", border: "none", cursor: "pointer", color: "var(--sage-dark)", fontSize: "13px", padding: "6px 2px" },
                   children: "🚩 举报",
                 }),
               Ne &&
                 n.jsx("button", {
+                  className: "detail-action-secondary danger",
                   onClick: () => {
                     (gt("post"), fa(r.id), st(r.authorId || ""), zt(r.author), Vt(!0));
                   },
-                  style: { background: "none", border: "none", cursor: "pointer", color: "#c4543d", fontSize: "13px", padding: "6px 2px" },
                   children: "🚫 拉黑",
                 }),
               n.jsxs("button", {
+                className: "detail-action-secondary",
                 onClick: () => (y == null ? void 0 : y(r)),
-                style: { background: "none", border: "none", cursor: "pointer", color: "var(--sage-dark)", fontSize: "13px", padding: "6px 2px" },
                 children: [
                   n.jsx("svg", {
                     viewBox: "0 0 24 24",
@@ -14593,7 +14637,8 @@ function Gv({ post: r, onBack: u, react: o, update: c, user: m, onStartDM: d, fl
             className: "friend-action-sheet translation-panel",
             children: [
               n.jsx("div", { className: "friend-action-header translation-panel-header", children: n.jsx("b", { children: "翻译结果" }) }),
-              n.jsx("div", { className: "translation-panel-content", children: Ve }),
+              n.jsx("div", { className: `translation-panel-content${Ve.loading ? " is-loading" : ""}`, children: Ve.text }),
+              n.jsx("div", { className: "translation-language-strip", children: TRANSLATION_LANGUAGES.map((se) => n.jsx("button", { className: Ve.target === se.code ? "active" : "", disabled: Ve.loading, onClick: async () => { pt((ge) => ({ ...ge, loading: !0, target: se.code })); const ge = await Au(Ve.sourceText, 500, se.code); pt({ text: ge.translated, target: ge.target, sourceText: Ve.sourceText, loading: !1 }); }, children: se.label }, se.code)) }),
               n.jsx("div", {
                 className: "friend-action-list",
                 children: [              n.jsxs("button", {
@@ -14629,7 +14674,7 @@ function Gv({ post: r, onBack: u, react: o, update: c, user: m, onStartDM: d, fl
 n.jsxs("button", {
                   onClick: async () => {
                     try {
-                      (await Wi(Ve), h("已复制译文"));
+                      (await Wi(Ve.text), h("已复制译文"));
                     } catch {
                       h("复制失败");
                     }
@@ -17343,7 +17388,7 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
             return;
           }
           const ce = await Au(te);
-          ce ? N((Xe) => ({ ...Xe, [z.id]: ce })) : d("翻译失败");
+          ce ? N((Xe) => ({ ...Xe, [z.id]: ce.translated })) : d("翻译失败");
         } catch {
           d("翻译失败，请重试");
         }
@@ -18609,7 +18654,7 @@ function Pv({ onClose: r, onSuccess: u }) {
               }),
             ],
           }),
-        o === "login" && n.jsxs("label", { style: { display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", margin: "12px 0 2px", fontSize: "12px", color: "#6f756f", cursor: "pointer" }, children: [n.jsx("input", { type: "checkbox", checked: rememberDevice, onChange: (w) => setRememberDevice(w.target.checked) }), "记住这台设备（30天免登录）"] }),
+        o === "login" && n.jsxs("label", { className: "remember-device-option", children: [n.jsx("input", { type: "checkbox", checked: rememberDevice, onChange: (w) => setRememberDevice(w.target.checked) }), n.jsx("span", { className: "remember-device-check", "aria-hidden": "true", children: rememberDevice ? "✓" : "" }), n.jsx("span", { children: "记住这台设备（30天免登录）" })] }),
         I && n.jsx("p", { className: "login-error", role: "alert", children: I }),
         n.jsxs("p", { className: "login-terms", children: [o === "login" ? "登录" : "注册", "即代表你同意《用户协议》和《隐私政策》"] }),
       ],
@@ -19702,6 +19747,12 @@ function e0({ posts: r, openPost: u, user: o, onSignOut: c, onEditProfile: m, on
                               children: [
                                 n.jsxs("span", { children: [n.jsx("b", { children: "自定义欢迎语" }), n.jsx("small", { children: "首页显示的专属问候（留空使用默认）" })] }),
                                 n.jsx("input", { type: "text", value: I, onChange: (g) => xn(g.target.value), placeholder: "如：又见面了，最近怎么样", maxLength: 30 }),
+                              ],
+                            }),
+                            n.jsxs("label", {
+                              children: [
+                                n.jsxs("span", { children: [n.jsx("b", { children: "优先翻译语言" }), n.jsx("small", { children: "手动选择后会覆盖所在地区的默认语言" })] }),
+                                n.jsx("select", { className: "translation-language-setting", defaultValue: Te.getItem("moodtree-translation-language") || "auto", onChange: (g) => { const L = g.target.value; if (L === "auto") { Te.removeItem("moodtree-translation-language"); Bm.removeItem("moodtree-translation-language-auto"); } else Te.setItem("moodtree-translation-language", L); resetDefaultTranslationLanguage(); h(L === "auto" ? "已恢复按地区自动选择" : `已优先翻译为${TRANSLATION_LANGUAGES.find((x) => x.code === L)?.label || "所选语言"}`); }, children: [n.jsx("option", { value: "auto", children: "跟随所在地区" }), ...TRANSLATION_LANGUAGES.map((L) => n.jsx("option", { value: L.code, children: L.label }, L.code))] }),
                               ],
                             }),
                             n.jsxs("label", {
@@ -22154,21 +22205,39 @@ ${X}`;
     }),
   });
 }
-async function Au(r, u = 500) {
-  var d;
-  const c = /[\u4e00-\u9fff]/.test(r) ? "zh|en" : "en|zh",
+const TRANSLATION_LANGUAGES = [
+  { code: "zh", label: "中文" }, { code: "en", label: "英语" }, { code: "ja", label: "日语" },
+  { code: "ko", label: "韩语" }, { code: "fr", label: "法语" }, { code: "es", label: "西班牙语" },
+  { code: "de", label: "德语" }, { code: "pt", label: "葡萄牙语" }, { code: "ru", label: "俄语" },
+];
+let defaultTranslationLanguagePromise = null;
+function resetDefaultTranslationLanguage() { defaultTranslationLanguagePromise = null; }
+async function getDefaultTranslationLanguage() {
+  const preferred = Te.getItem("moodtree-translation-language");
+  if (preferred) return preferred;
+  const cached = Bm.getItem("moodtree-translation-language-auto");
+  if (cached) return cached;
+  defaultTranslationLanguagePromise ||= qe("/api/translate/default-language").then((r) => {
+    const code = TRANSLATION_LANGUAGES.some((u) => u.code === r.language) ? r.language : "zh";
+    Bm.setItem("moodtree-translation-language-auto", code);
+    return code;
+  }).catch(() => "zh");
+  return defaultTranslationLanguagePromise;
+}
+async function Au(r, u = 500, target = "") {
+  const c = target || await getDefaultTranslationLanguage(),
     m = [];
   for (let h = 0; h < r.length; h += u) {
     const v = r.slice(h, h + u);
     h > 0 && (await new Promise((j) => setTimeout(j, 300)));
     try {
-      const y = await (await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(v)}&langpair=${c}`)).json();
-      m.push(((d = y.responseData) == null ? void 0 : d.translatedText) || v);
+      const y = await qe(`/api/translate?text=${encodeURIComponent(v)}&target=${encodeURIComponent(c)}`);
+      m.push(y.translated || v);
     } catch {
       m.push(v);
     }
   }
-  return m.join(" ");
+  return { translated: m.join(" "), target: c };
 }
 function Ru(r, u) {
   const o = r.toLowerCase().indexOf(u.toLowerCase());

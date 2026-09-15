@@ -1,4 +1,4 @@
-import json, hashlib, hmac, time, urllib.parse, urllib.request, urllib.error, os, base64, random, datetime, re, copy, smtplib, ssl
+import json, hashlib, hmac, time, urllib.parse, urllib.request, urllib.error, os, base64, random, datetime, re, copy, smtplib, ssl, ipaddress
 from email.message import EmailMessage
 
 # Force Asia/Shanghai timezone for all time displays
@@ -1138,13 +1138,58 @@ def get_unread(user_id):
     total = sum(dm_unread.values()) + sum(room_unread.values())
     return {'dm': dm_unread, 'rooms': room_unread, 'total': total}
 
+TRANSLATION_LANGUAGES = {
+    'zh': '中文', 'en': '英语', 'ja': '日语', 'ko': '韩语',
+    'fr': '法语', 'es': '西班牙语', 'de': '德语', 'it': '意大利语',
+    'pt': '葡萄牙语', 'ru': '俄语'
+}
+
+COUNTRY_TRANSLATION_LANGUAGE = {
+    'CN': 'zh', 'HK': 'zh', 'MO': 'zh', 'TW': 'zh',
+    'US': 'en', 'GB': 'en', 'CA': 'en', 'AU': 'en', 'NZ': 'en', 'IE': 'en', 'SG': 'en',
+    'JP': 'ja', 'KR': 'ko', 'FR': 'fr', 'ES': 'es', 'MX': 'es',
+    'DE': 'de', 'AT': 'de', 'IT': 'it', 'PT': 'pt', 'BR': 'pt', 'RU': 'ru'
+}
+_IP_COUNTRY_CACHE = {}
+
+def _country_from_ip(headers):
+    forwarded = headers.get('cf-connecting-ip') or headers.get('x-forwarded-for') or headers.get('x-real-ip') or ''
+    ip = forwarded.split(',')[0].strip()
+    try:
+        if not ip or not ipaddress.ip_address(ip).is_global:
+            return ''
+    except ValueError:
+        return ''
+    cached = _IP_COUNTRY_CACHE.get(ip)
+    if cached and cached[1] > time.time():
+        return cached[0]
+    try:
+        req = urllib.request.Request(f'https://api.country.is/{urllib.parse.quote(ip)}', headers={'User-Agent': 'MoodTree/1.0'})
+        payload = json.loads(urllib.request.urlopen(req, timeout=2).read())
+        country = str(payload.get('country', '')).upper()
+        if country:
+            _IP_COUNTRY_CACHE[ip] = (country, time.time() + 86400)
+        return country
+    except Exception:
+        return ''
+
+def default_translation_language(headers):
+    headers = {str(k).lower(): str(v) for k, v in (headers or {}).items()}
+    country = (headers.get('cf-ipcountry') or headers.get('x-country-code') or headers.get('x-geo-country') or headers.get('x-vercel-ip-country') or headers.get('cloudfront-viewer-country') or '').upper()
+    country = country or _country_from_ip(headers)
+    language = COUNTRY_TRANSLATION_LANGUAGE.get(country)
+    source = 'country'
+    if not language:
+        accept = headers.get('accept-language', '').lower()
+        language = next((code for code in TRANSLATION_LANGUAGES if accept.startswith(code) or f',{code}' in accept), '')
+        source = 'browser' if language else 'fallback'
+    language = language or ('zh' if country in ('', 'CN') else 'en')
+    return {'language': language, 'label': TRANSLATION_LANGUAGES.get(language, '中文'), 'country': country or 'CN', 'source': source}
+
 def translate_text(text, target=''):
     if not text.strip():
         return {'error': 'Empty text'}
-    # Auto-detect target: if Chinese, translate to English; otherwise to Chinese
-    has_chinese = any('\u4e00' <= ch <= '\u9fff' for ch in text)
-    if not target:
-        target = 'en' if has_chinese else 'zh'
+    target = target if target in TRANSLATION_LANGUAGES else 'zh'
     try:
         url = f'https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl={target}&dt=t&q={urllib.parse.quote(text)}'
         req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
@@ -1932,6 +1977,7 @@ def main_handler(event, context):
     method = event.get('httpMethod', event.get('requestContext', {}).get('httpMethod', 'GET'))
     path = event.get('path', event.get('requestContext', {}).get('path', '/'))
     body = event.get('body', '{}')
+    request_headers = event.get('headers', {}) or {}
     if event.get('isBase64Encoded'):
         body = base64.b64decode(body).decode('utf-8')
     cors = {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type,Authorization', 'Content-Type': 'application/json; charset=utf-8'}
@@ -1988,6 +2034,8 @@ def main_handler(event, context):
             result = get_unread(qp.get('userid', ''))
         elif path == '/api/chat/read-status' and method == 'GET':
             result = get_read_status(qp.get('userid', ''), qp.get('type', 'dm'), qp.get('target', ''))
+        elif path == '/api/translate/default-language' and method == 'GET':
+            result = default_translation_language(request_headers)
         elif path == '/api/translate' and method == 'GET':
             result = translate_text(qp.get('text', ''), qp.get('target', ''))
         elif path == '/api/asr' and method == 'POST':
