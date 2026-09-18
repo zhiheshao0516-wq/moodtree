@@ -13791,7 +13791,6 @@ function Xv({ onCancel: r, onPublish: u, user: o, publishRoomId: c, flash: m }) 
               n.jsx("div", {
                 style: { position: "relative", width: "100%", marginTop: "9px" },
                 children: [
-                  n.jsx(VioHL, { text: v, words: vioList, currentIdx: -1 }),
                   n.jsx("textarea", {
                     ref: we,
                     value: v,
@@ -13799,7 +13798,7 @@ function Xv({ onCancel: r, onPublish: u, user: o, publishRoomId: c, flash: m }) 
                     maxLength: 1e4,
                     placeholder: "不用组织语言，想到什么就写什么。我们会认真听你说…",
                     required: !0,
-                    style: { position: "relative", zIndex: 1, background: "transparent", color: "transparent", caretColor: "#546158", border: "1px solid #e2dfd6", borderRadius: "14px", padding: "14px 16px", fontSize: "12px", width: "100%", resize: "none", height: "155px", lineHeight: "1.7" },
+                    style: { position: "relative", zIndex: 1, background: "transparent", color: "#3a4a40", caretColor: "#546158", border: "1px solid #e2dfd6", borderRadius: "14px", padding: "14px 16px", fontSize: "12px", width: "100%", resize: "none", height: "155px", lineHeight: "1.7" },
                   }),
                 ],
               }),
