@@ -1138,11 +1138,7 @@ def get_unread(user_id):
     total = sum(dm_unread.values()) + sum(room_unread.values())
     return {'dm': dm_unread, 'rooms': room_unread, 'total': total}
 
-TRANSLATION_LANGUAGES = {
-    'zh': '中文', 'en': '英语', 'ja': '日语', 'ko': '韩语',
-    'fr': '法语', 'es': '西班牙语', 'de': '德语', 'it': '意大利语',
-    'pt': '葡萄牙语', 'ru': '俄语'
-}
+TRANSLATION_LANGUAGES = {'zh': '中文', 'en': '英语', 'ja': '日语', 'ko': '韩语', 'fr': '法语', 'es': '西班牙语', 'de': '德语', 'ru': '俄语', 'pt': '葡萄牙语', 'it': '意大利语', 'ar': '阿拉伯语', 'th': '泰语', 'vi': '越南语', 'id': '印度尼西亚语', 'ms': '马来语', 'hi': '印地语', 'din': '丁卡语', 'hsb': '上索布语', 'dsb': '下索布语', 'eo': '世界语', 'crl': '东北部克里语', 'crj': '东南部克里语', 'frs': '东弗里西亚语', 'ses': '东桑海语', 'frm': '中古法语', 'mga': '中古爱尔兰语', 'enm': '中古英语', 'dum': '中古荷兰语', 'gmh': '中古高地德语', 'ojc': '中奥吉布瓦语', 'ckb': '中库尔德语', 'fon': '丰语', 'da': '丹麦语', 'uk': '乌克兰语', 'uz': '乌兹别克语', 'uga': '乌加里特语', 'ur': '乌尔都语', 'udm': '乌德穆尔特语', 'shu': '乍得阿拉伯语', 'cho': '乔克托语', 'nb': '书面挪威语', 'agq': '亚罕语', 'hy': '亚美尼亚语', 'ace': '亚齐语', 'tl': '他加禄语', 'ik': '伊努皮克语', 'ig': '伊博语', 'io': '伊多语', 'ibb': '伊比比奥语', 'ilo': '伊洛卡诺语', 'iba': '伊班语', 'smn': '伊纳里萨米语', 'lmo': '伦巴第语', 'nds': '低地德语', 'bg': '保加利亚语', 'sd': '信德语', 'bal': '俾路支语', 'si': '僧伽罗语', 'qu': '克丘亚语', 'ks': '克什米尔语', 'kpe': '克佩列语', 'tlh': '克林贡语', 'hr': '克罗地亚语', 'kfo': '克罗语', 'mus': '克里克语', 'crh': '克里米亚鞑靼语', 'cr': '克里语', 'kac': '克钦语', 'rof': '兰博语', 'lam': '兰巴语', 'gon': '冈德语', 'is': '冰岛语', 'ii': '凉山彝语', 'chr': '切罗基语', 'lez': '列兹金语', 'kg': '刚果语', 'lij': '利古里亚语', 'lil': '利洛埃特语', 'gl': '加利西亚语', 'car': '加勒比语', 'gag': '加告兹语', 'gaa': '加族语', 'ca': '加泰罗尼亚语', 'kbl': '加涅姆布语', 'nus': '努埃尔语', 'hu': '匈牙利语', 'lrc': '北卢尔语', 'ttm': '北塔穹语', 'frr': '北弗里西亚语', 'nd': '北恩德贝勒语', 'se': '北方萨米语', 'twq': '北桑海语', 'nso': '北索托语', 'slh': '南卢舒特种子语', 'tce': '南塔穹语', 'sdh': '南库尔德语', 'nr': '南恩德贝勒语', 'hax': '南海达语', 'st': '南索托语', 'sma': '南萨米语', 'alt': '南阿尔泰语', 'af': '南非荷兰语', 'brx': '博多语', 'bho': '博杰普尔语', 'kln': '卡伦金语', 'kr': '卡努里语', 'kcg': '卡塔布语', 'cad': '卡多语', 'kam': '卡姆巴语', 'kaw': '卡威语', 'xal': '卡尔梅克语', 'cay': '卡尤加语', 'kbd': '卡巴尔德语', 'kea': '卡布佛得鲁语', 'kkj': '卡库语', 'kaa': '卡拉卡尔帕克语', 'krc': '卡拉恰伊巴尔卡尔语', 'kab': '卡拜尔语', 'kaj': '卡捷语', 'frc': '卡真法语', 'krl': '卡累利阿语', 'kn': '卡纳达语', 'crr': '卡罗莱纳州阿尔冈昆语', 'csb': '卡舒比语', 'kha': '卡西语', 'lui': '卢伊塞诺语', 'luo': '卢奥语', 'lua': '卢巴-卢拉语', 'lg': '卢干达语', 'rw': '卢旺达语', 'lb': '卢森堡语', 'luy': '卢雅语', 'inh': '印古什语', 'myv': '厄尔兹亚语', 'syr': '叙利亚语', 'syc': '古典叙利亚语', 'nwc': '古典尼瓦尔语', 'gu': '古吉拉特语', 'egy': '古埃及语', 'grc': '古希腊语'}
 
 COUNTRY_TRANSLATION_LANGUAGE = {
     'CN': 'zh', 'HK': 'zh', 'MO': 'zh', 'TW': 'zh',
@@ -1235,6 +1231,8 @@ def list_posts(viewerId=''):
         p_copy = dict(p)
         p_copy['saved'] = viewerId in saved_posts_map.get(p['id'], [])
         p_copy['pinned'] = viewerId in pinned_posts_map.get(p['id'], [])
+        p_copy['liked'] = viewerId in data.get('userLikes', {}).get(p['id'], [])
+        p_copy['sameActive'] = viewerId in data.get('userSame', {}).get(p['id'], [])
         p_copy['mine'] = (authorId == viewerId) if viewerId else False
         public.append(p_copy)
     return {'posts': public, 'total': len(public)}
@@ -1435,20 +1433,20 @@ def react_post(pid, body):
             key = body.get('type', 'likes')
             if key in ['likes','hugs','same']:
                 user_id = body.get('userId', '')
-                if key == 'likes' and user_id:
-                    ul = data.setdefault('userLikes', {})
+                if key in ('likes', 'same') and user_id:
+                    ul = data.setdefault('userLikes' if key == 'likes' else 'userSame', {})
                     liked_posts = ul.get(pid, [])
                     if user_id in liked_posts:
                         liked_posts.remove(user_id)
-                        p['likes'] = max(0, p.get('likes',0) - 1)
+                        p[key] = max(0, p.get(key,0) - 1)
                         liked = False
                     else:
                         liked_posts.append(user_id)
-                        p['likes'] = p.get('likes',0) + 1
+                        p[key] = p.get(key,0) + 1
                         liked = True
                     ul[pid] = liked_posts
                     write_data(data)
-                    return {'success': True, 'post': p, 'liked': liked}
+                    return {'success': True, 'post': p, 'liked' if key == 'likes' else 'same': liked}
                 else:
                     p[key] = p.get(key,0) + 1
             write_data(data)

@@ -11872,16 +11872,11 @@ function Uv() {
           const Ue = Q();
           Ue && jt((Le) => (Le ? { ...Le, text: Ue.text, x: Ue.x, y: Ue.y } : { ...Ue, src: "sel" }));
         }, 280);
-      },
-      Ue = (Le) => {
-        const _e = window.getSelection();
-        ((_e && _e.toString().trim()) || Dt.current) && Le.preventDefault();
       };
     return (
       document.addEventListener("selectionchange", De),
-      document.addEventListener("contextmenu", Ue),
       () => {
-        (clearTimeout(M), clearInterval(Ne), document.removeEventListener("selectionchange", De), document.removeEventListener("contextmenu", Ue));
+        (clearTimeout(M), clearInterval(Ne), document.removeEventListener("selectionchange", De));
       }
     );
   }, []),
@@ -12138,7 +12133,9 @@ function Uv() {
           pe(`/api/posts/${M}/react`, { type: Q, userId: (k == null ? void 0 : k.id) || "" }).catch(() => {}));
         const oe = o.find((Ne) => Ne.id === M);
         oe && !oe.liked && me("已点亮一颗心");
-      } else
+      } else if (Q === "same")
+        (c((oe) => oe.map((Ne) => Ne.id === M ? { ...Ne, sameActive: !Ne.sameActive, same: Math.max(0, Ne.same + (Ne.sameActive ? -1 : 1)) } : Ne)), pe(`/api/posts/${M}/react`, { type: Q, userId: (k == null ? void 0 : k.id) || "" }).catch(() => {}), me("经历共鸣状态已更新"));
+      else
         (c((oe) => oe.map((Ne) => (Ne.id === M ? { ...Ne, [Q]: Ne[Q] + 1 } : Ne))),
           pe(`/api/posts/${M}/react`, { type: Q, userId: (k == null ? void 0 : k.id) || "" }).catch(() => {}),
           me(Q === "hugs" ? "抱抱已送达 🤍" : Q === "same" ? "谢谢你让 TA 知道并不孤单" : "已点亮一颗心"));
@@ -12489,13 +12486,13 @@ function Uv() {
             children: [
               n.jsx("div", { className: "friend-action-header translation-panel-header", children: n.jsx("b", { children: "翻译结果" }) }),
               n.jsx("div", { className: `translation-panel-content${xa.loading ? " is-loading" : ""}`, children: xa.text }),
-              n.jsx("div", { className: "translation-language-strip", children: TRANSLATION_LANGUAGES.map((M) => n.jsx("button", { className: xa.target === M.code ? "active" : "", disabled: xa.loading, onClick: async () => { We((Q) => ({ ...Q, loading: !0, target: M.code })); const Q = await Au(xa.sourceText, 500, M.code); We({ text: Q.translated, target: Q.target, sourceText: xa.sourceText, loading: !1 }); }, children: M.label }, M.code)) }),
+              n.jsx(TranslationLanguagePicker, { value: xa.target, disabled: xa.loading, onSelect: async (M) => { We((Q) => ({ ...Q, loading: !0, target: M })); const Q = await Au(xa.sourceText, 500, M); We({ text: Q.translated, target: Q.target, sourceText: xa.sourceText, loading: !1 }); } }),
               n.jsx("div", {
                 className: "friend-action-list",
                 children: [              n.jsxs("button", {
                 className: "msg-action-item",
                 onClick: () => {
-                  const el = document.querySelector(".friend-action-sheet");
+                  const el = document.querySelector(".translation-panel .translation-panel-content");
                   if (el) {
                     try {
                       const range = document.createRange();
@@ -13040,7 +13037,7 @@ function bp({ images: r, startIndex: u, onClose: o, canDelete: c, onDelete: m, f
                   "aria-label": "下一张",
                   children: "›",
                 }),
-              n.jsxs("div", { className: "img-viewer-hint", children: ["长按图片可保存", c ? "或删除" : ""] }),
+              n.jsx("div", { className: "img-viewer-hint", children: "可使用下方按钮保存图片" }),
             ],
           }),
           C &&
@@ -13053,7 +13050,6 @@ function bp({ images: r, startIndex: u, onClose: o, canDelete: c, onDelete: m, f
                 children: [
                   n.jsx("button", { onClick: Y, disabled: T, children: "保存到相册" }),
                   c && m && n.jsx("button", { className: "danger", onClick: K, disabled: T, children: "删除照片" }),
-                  n.jsx("button", { className: "cancel", onClick: () => S(!1), disabled: T, children: "取消" }),
                 ],
               }),
             }),
@@ -13205,6 +13201,7 @@ function Xv({ onCancel: r, onPublish: u, user: o, publishRoomId: c, flash: m }) 
     const [vioList, setVioList] = p.useState([]);
   p.useRef(new Map());
   const we = p.useRef(null);
+  const publishImeRef = p.useRef(!1);
   const checkLocal = (Gr) => {
     const Jn = Gr.toLowerCase(), Ei = [];
     const Vy = ['操你','操你妈','操你娘','操你祖宗','操你老妈','操你老母','操妳','操妳妈','操妳娘','操比','操逼','草你妈','草泥马','草你娘','草吗','草拟妈','肏你','肏死','操死','他妈的','他妈地','他马的','他妈','他娘','妈的','妈b','妈个b','妈比','妈逼','妈的b','妈个比','妈妈的','你妈','你妈的','你娘','你奶奶的','你她妈的','你它妈的','你他妈','你马的','去你妈的','傻逼','傻比','傻b','傻bi','煞笔','煞逼','脑残','脑瘫','废物','垃圾','辣鸡','腊鸡','沙雕','韭菜','白痴','笨蛋','蠢货','蠢猪','猪头','混蛋','王八蛋','鳖孙','贱人','贱货','贱b','贱逼','婊子','婊子养的','荡妇','浪女','骚货','骚比','骚逼','骚女','烂货','烂逼','绿茶婊','心机婊','撩骚','鸡巴','鸡吧','鸡叭','几把','几巴','几叭','鸡鸡','小鸡鸡','鸡奸','阳具','阴茎','阴道','阴户','阴唇','阴核','阴毛','龟头','屌丝','逼样','乳头','乳房','奶子','巨乳','做爱','性交','性器','性无能','强奸','轮奸','妓女','妓院','嫖娼','嫖客','卖淫','招妓','姘头','炮友','一夜情','援交','援助交际','自慰','手淫','打飞机','打炮','狗日的','狗娘养的','狗屁','狗屎','狗杂种','杂种','野种','孽种','畜生','畜牲','狗东西','去死','去死吧','你完蛋了','找死','作死','该死','找抽','找打','弄死你','弄死','打死你','干你','干你妈','干你娘','干你老母','干死你','干死','干妳妈','幹你娘','幹','靠北','靠爸','靠腰','靠母','靠背','屁眼','射精','精子','内射','颜射','口交','肛交','吹箫','叫床','潮吹','nmsl','wcnm','wocao','woc','tmd','nmb','wdnmd','cnm','wtf','stfu','kys','kmt','sb'];
@@ -13715,7 +13712,7 @@ function Xv({ onCancel: r, onPublish: u, user: o, publishRoomId: c, flash: m }) 
             ],
           }),
           n.jsxs("label", {
-            children: ["给这份心情一个标题", n.jsx("input", { value: d, onChange: (O) => h(O.target.value), maxLength: 50, placeholder: "比如：今天发生了一件让我很难过的事…", required: !0 }), n.jsxs("small", { children: [d.length, "/50"] })],
+            children: ["给这份心情一个标题", n.jsx("input", { value: d, onCompositionStart: () => { publishImeRef.current = !0; }, onCompositionEnd: (O) => { publishImeRef.current = !1; h(O.currentTarget.value); }, onChange: (O) => { if (!publishImeRef.current) h(O.target.value); }, maxLength: 50, placeholder: "比如：今天发生了一件让我很难过的事…", required: !0 }), n.jsxs("small", { children: [d.length, "/50"] })],
           }),
           n.jsxs("label", {
             children: [
@@ -13799,7 +13796,9 @@ function Xv({ onCancel: r, onPublish: u, user: o, publishRoomId: c, flash: m }) 
                   n.jsx("textarea", {
                     ref: we,
                     value: v,
-                    onChange: (O) => { j(O.target.value); gt(null); checkLocal(O.target.value); },
+                    onCompositionStart: () => { publishImeRef.current = !0; },
+                    onCompositionEnd: (O) => { publishImeRef.current = !1; const M = O.currentTarget.value; j(M); gt(null); checkLocal(M); },
+                    onChange: (O) => { if (!publishImeRef.current) { j(O.target.value); gt(null); checkLocal(O.target.value); } },
                     maxLength: 1e4,
                     placeholder: "不用组织语言，想到什么就写什么。我们会认真听你说…",
                     required: !0,
@@ -14229,7 +14228,7 @@ function Gv({ post: r, onBack: u, react: o, update: c, user: m, onStartDM: d, fl
             children: [
               n.jsxs("button", { onClick: () => o(r.id, "likes"), className: r.liked ? "liked" : "", children: [r.liked ? "♥" : "♡", " 点赞 ", n.jsx("b", { children: r.likes })] }),
               n.jsxs("button", { onClick: () => o(r.id, "hugs"), children: ["抱 抱抱一下 ", n.jsx("b", { children: r.hugs })] }),
-              n.jsxs("button", { onClick: () => o(r.id, "same"), children: ["♧ 我也经历过 ", n.jsx("b", { children: r.same })] }),
+              n.jsxs("button", { className: r.sameActive ? "same-active" : "", onClick: () => o(r.id, "same"), children: [r.sameActive ? "♣ 已共鸣 " : "♧ 我也经历过 ", n.jsx("b", { children: r.same })] }),
               n.jsx("button", { className: r.saved ? "saved" : "", onClick: () => o(r.id, "saved"), children: r.saved ? "◆ 已收藏" : "◇ 收藏" }),
               Ne &&
                 n.jsx("button", {
@@ -14638,13 +14637,13 @@ function Gv({ post: r, onBack: u, react: o, update: c, user: m, onStartDM: d, fl
             children: [
               n.jsx("div", { className: "friend-action-header translation-panel-header", children: n.jsx("b", { children: "翻译结果" }) }),
               n.jsx("div", { className: `translation-panel-content${Ve.loading ? " is-loading" : ""}`, children: Ve.text }),
-              n.jsx("div", { className: "translation-language-strip", children: TRANSLATION_LANGUAGES.map((se) => n.jsx("button", { className: Ve.target === se.code ? "active" : "", disabled: Ve.loading, onClick: async () => { pt((ge) => ({ ...ge, loading: !0, target: se.code })); const ge = await Au(Ve.sourceText, 500, se.code); pt({ text: ge.translated, target: ge.target, sourceText: Ve.sourceText, loading: !1 }); }, children: se.label }, se.code)) }),
+              n.jsx(TranslationLanguagePicker, { value: Ve.target, disabled: Ve.loading, onSelect: async (se) => { pt((ge) => ({ ...ge, loading: !0, target: se })); const ge = await Au(Ve.sourceText, 500, se); pt({ text: ge.translated, target: ge.target, sourceText: Ve.sourceText, loading: !1 }); } }),
               n.jsx("div", {
                 className: "friend-action-list",
                 children: [              n.jsxs("button", {
                 className: "msg-action-item",
                 onClick: () => {
-                  const el = document.querySelector(".friend-action-sheet");
+                  const el = document.querySelector(".translation-panel .translation-panel-content");
                   if (el) {
                     try {
                       const range = document.createRange();
@@ -16930,6 +16929,7 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
     Jt = p.useRef(void 0),
     ca = p.useRef(null),
     ha = p.useRef(null),
+    imeRef = p.useRef(!1),
     va = `moodtree-pin-${u}-${o}`,
     O = `moodtree-mute-${u}-${o}`,
     M = `moodtree-chat-bg-${u}-${o}`,
@@ -16950,14 +16950,21 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
         d("请选择图片文件");
         return;
       }
-      if (z.size > 5 * 1024 * 1024) {
-        d("图片不能超过5MB");
+      if (z.size > 12 * 1024 * 1024) {
+        d("图片不能超过12MB");
         return;
       }
       const te = new FileReader();
       ((te.onload = () => {
-        const ce = te.result;
-        (Te.setItem(M, ce), _e(ce), d("聊天背景已设置"));
+        const ce = new Image();
+        ce.onload = () => {
+          const max = 1600, scale = Math.min(1, max / Math.max(ce.width, ce.height)), canvas = document.createElement("canvas");
+          canvas.width = Math.max(1, Math.round(ce.width * scale)); canvas.height = Math.max(1, Math.round(ce.height * scale));
+          canvas.getContext("2d").drawImage(ce, 0, 0, canvas.width, canvas.height);
+          const data = canvas.toDataURL("image/jpeg", .78);
+          try { localStorage.setItem(M, data); _e(data); d("聊天背景已设置并保存"); } catch { d("图片仍然过大，请选择更小的图片"); }
+        };
+        ce.onerror = () => d("图片读取失败"); ce.src = te.result;
       }),
         (te.onerror = () => d("图片读取失败")),
         te.readAsDataURL(z));
@@ -17312,8 +17319,9 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
     },
     ua = (z) => {
       zt.current = window.setTimeout(() => {
-        fe(z);
-      }, 500);
+        const te = window.getSelection();
+        (!te || !te.toString().trim()) && fe(z);
+      }, 650);
     },
     Ot = () => {
       zt.current && clearTimeout(zt.current);
@@ -17537,11 +17545,11 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
           ".emoji-picker{display:grid;grid-template-columns:repeat(10,1fr);gap:2px;padding:8px;background:#f8f6f2;border-top:1px solid #e8e4dc;max-height:200px;overflow-y:auto}.emoji-picker button{width:32px;height:32px;border:none;background:none;font-size:20px;cursor:pointer;border-radius:6px;display:flex;align-items:center;justify-content:center;transition:all 0.15s}.emoji-picker button:hover{background:var(--sage-soft,#e8f0ea);transform:scale(1.2)}",
       }),
       J && n.jsx("div", { className: "emoji-picker", children: Wv.map((z) => n.jsx("button", { onClick: () => H(T + z), type: "button", children: z }, z)) }),
-      Y &&
-        n.jsxs("div", {
+      n.jsxs("div", {
           className: "chat-more-panel",
           children: [
             n.jsxs("button", {
+              title: "相册",
               className: "more-action-btn",
               onClick: () => {
                 var z;
@@ -17566,6 +17574,7 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
               ],
             }),
             n.jsxs("button", {
+              title: "拍照",
               className: "more-action-btn",
               onClick: () => {
                 var z;
@@ -17594,6 +17603,7 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
               ],
             }),
             n.jsxs("button", {
+              title: "收藏",
               className: "more-action-btn",
               onClick: () => {
                 (Z(!0), K(!1));
@@ -17617,6 +17627,7 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
               ],
             }),
             n.jsxs("button", {
+              title: "位置",
               className: "more-action-btn",
               onClick: Hl,
               disabled: ye,
@@ -17639,6 +17650,7 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
               ],
             }),
             n.jsxs("button", {
+              title: "文件",
               className: "more-action-btn",
               onClick: () => {
                 var z;
@@ -17833,14 +17845,16 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
                   className: "chat-input-bar",
                   children: [
                     n.jsx("button", { className: `voice-btn ${Se ? "recording" : ""}`, onClick: vn, type: "button", title: "语音输入", children: Se ? "⏹" : "🎙️" }),
-                    n.jsx("input", {
+                    n.jsx("textarea", {
                       ref: Zt,
                       value: T,
                       onChange: (z) => {
                         (H(z.target.value), V(null));
                       },
+                      onCompositionStart: () => { imeRef.current = !0; },
+                      onCompositionEnd: (z) => { imeRef.current = !1; H(z.currentTarget.value); },
                       onKeyDown: (z) => {
-                        z.key === "Enter" && !z.shiftKey && (z.preventDefault(), Wa());
+                        z.key === "Enter" && !z.shiftKey && !imeRef.current && !z.nativeEvent.isComposing && (z.preventDefault(), Wa());
                       },
                       placeholder: Se ? "正在听…" : "输入消息…",
                       maxLength: 500,
@@ -17854,16 +17868,7 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
                       type: "button",
                       children: "😊",
                     }),
-                    T.trim()
-                      ? n.jsx("button", { className: "send-btn", onClick: Wa, children: "发送" })
-                      : n.jsx("button", {
-                          className: "more-btn",
-                          onClick: () => {
-                            (K(!Y), D(!1));
-                          },
-                          type: "button",
-                          children: "+",
-                        }),
+                    n.jsx("button", { className: "send-btn", onClick: Wa, disabled: !T.trim(), children: "发送" }),
                   ],
                 }),
                 Se && n.jsxs("div", { className: "voice-recording-indicator", children: [n.jsx("span", { className: "voice-dot" }), "正在录音，说完后点击⏹停止"] }),
@@ -18155,6 +18160,7 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
                                 }),
                               ],
                             }),
+                          n.jsx("input", { ref: Le, type: "file", accept: "image/*", className: "chat-bg-file-input", onChange: (z) => { const te = z.target.files && z.target.files[0]; z.target.value = ""; te && Nt(te); } }),
                           Ue && n.jsxs("div", { className: "chat-info-item danger", onClick: ba, children: [n.jsx("span", { children: "恢复默认背景" })] }),
                           n.jsxs("div", { className: "chat-info-item danger", onClick: se, children: [n.jsx("span", { children: "清空聊天记录" })] }),
                           h && n.jsxs("div", { className: "chat-info-item danger", onClick: ge, children: [n.jsx("span", { children: "删除好友" })] }),
@@ -18222,6 +18228,7 @@ function Pv({ onClose: r, onSuccess: u }) {
     [rememberDevice, setRememberDevice] = p.useState(!0),
     [loginMethod, setLoginMethod] = p.useState("phone"),
     [countdown, setCountdown] = p.useState(0),
+    [termsDoc, setTermsDoc] = p.useState(""),
     F = (w) => {
       (c(w), d("phone"), y(""), S(""), H(""), V(""), P(""), K(null));
     },
@@ -18656,7 +18663,8 @@ function Pv({ onClose: r, onSuccess: u }) {
           }),
         o === "login" && n.jsxs("label", { className: "remember-device-option", children: [n.jsx("input", { type: "checkbox", checked: rememberDevice, onChange: (w) => setRememberDevice(w.target.checked) }), n.jsx("span", { className: "remember-device-check", "aria-hidden": "true", children: rememberDevice ? "✓" : "" }), n.jsx("span", { children: "记住这台设备（30天免登录）" })] }),
         I && n.jsx("p", { className: "login-error", role: "alert", children: I }),
-        n.jsxs("p", { className: "login-terms", children: [o === "login" ? "登录" : "注册", "即代表你同意《用户协议》和《隐私政策》"] }),
+        n.jsxs("p", { className: "login-terms", children: [o === "login" ? "登录" : "注册", "即代表你同意", n.jsx("button", { type: "button", onClick: () => setTermsDoc("user"), children: "《用户协议》" }), "和", n.jsx("button", { type: "button", onClick: () => setTermsDoc("privacy"), children: "《隐私政策》" })] }),
+        termsDoc && n.jsx("div", { className: "terms-overlay", onClick: (w) => w.target === w.currentTarget && setTermsDoc(""), children: n.jsxs("article", { className: "terms-modal", children: [n.jsx("button", { className: "terms-close", type: "button", onClick: () => setTermsDoc(""), children: "×" }), n.jsx("h2", { children: termsDoc === "user" ? "MoodTree 用户协议" : "MoodTree 隐私政策" }), n.jsx("div", { children: termsDoc === "user" ? "欢迎使用 MoodTree 情绪树洞。你应使用本人合法持有的手机号或邮箱注册并妥善保管登录凭证，不得出借、转让账号或冒用他人身份。这里鼓励真诚表达和善意回应，但禁止发布违法违规、骚扰辱骂、歧视仇恨、色情暴力、欺诈广告、侵犯隐私或知识产权的内容。你对自己发布的帖子、评论、图片和聊天内容负责；平台可依据社区规则采取提醒、隐藏、删除、限制功能或封禁等措施。MoodTree 提供情绪表达与陪伴空间，不构成医疗、心理诊断、法律或其他专业意见；遇到自伤、轻生或紧急危险，请立即联系可信任的人、当地急救机构或专业援助。因网络故障、第三方服务、不可抗力造成的中断，平台会尽力修复但不承诺绝对无误。你可在设置中管理资料、退出登录或申请处理账号数据。继续使用即表示你已阅读并同意本协议及后续依法公示的合理更新。" : "MoodTree 重视你的隐私。为完成注册登录、验证码、安全验证和云端同步，我们会处理你主动提供的手机号或邮箱、账号标识、设备登录状态；为实现发帖、评论、收藏、聊天、头像与图片功能，会保存你主动提交的内容及必要操作记录。我们仅在提供服务、保障安全、履行法律义务和改进体验所需范围内使用数据，不出售个人信息。短信、邮件、对象存储、内容安全、AI 与翻译等能力可能由受约束的第三方服务商提供，只传输完成相应功能所必需的数据。公开帖子会按你的可见范围展示，私密内容不会被主动公开。请避免在匿名社区透露身份证号、住址、银行卡等敏感信息。我们采取访问控制、传输保护和最小权限等措施，但互联网服务无法保证绝对安全。你可以修改资料、清理记录、取消设备记忆，并可联系我们申请访问、更正或删除相关数据。未成年人应在监护人指导下使用。法律要求或保护用户安全时，我们可能依法保存或披露必要信息。" })] }) }),
       ],
     }),
   });
@@ -19759,14 +19767,16 @@ function e0({ posts: r, openPost: u, user: o, onSignOut: c, onEditProfile: m, on
                               children: [
                                 n.jsxs("span", { children: [n.jsx("b", { children: "🎂 我的生日" }), n.jsx("small", { children: "生日当天会收到专属祝福（格式：MM-DD 或 YYYY-MM-DD）" })] }),
                                 n.jsx("input", {
-                                  type: "date",
+                                  type: "text",
+                                  inputMode: "numeric",
+                                  className: "birthday-input",
+                                  placeholder: "年-月-日",
                                   value: Ll,
                                   onChange: (g) => {
-                                    (Jn(g.target.value),
-                                      pe("/api/user/profile", { userId: o.id, birthday: g.target.value })
-                                        .then(() => h("生日已保存，届时会有惊喜 🎂"))
-                                        .catch(() => h("保存失败")));
+                                    const digits = g.target.value.replace(/\D/g, "").slice(0, 8), formatted = digits.length > 4 ? `${digits.slice(0,4)}-${digits.slice(4,6)}${digits.length > 6 ? `-${digits.slice(6,8)}` : ""}` : digits;
+                                    Jn(formatted);
                                   },
+                                  onBlur: () => { if (/^\d{4}-\d{2}-\d{2}$/.test(Ll)) pe("/api/user/profile", { userId: o.id, birthday: Ll }).then(() => h("生日已保存，届时会有惊喜 🎂")).catch(() => h("保存失败")); },
                                 }),
                               ],
                             }),
@@ -22205,11 +22215,18 @@ ${X}`;
     }),
   });
 }
-const TRANSLATION_LANGUAGES = [
-  { code: "zh", label: "中文" }, { code: "en", label: "英语" }, { code: "ja", label: "日语" },
-  { code: "ko", label: "韩语" }, { code: "fr", label: "法语" }, { code: "es", label: "西班牙语" },
-  { code: "de", label: "德语" }, { code: "pt", label: "葡萄牙语" }, { code: "ru", label: "俄语" },
-];
+const TRANSLATION_LANGUAGES = [{ code: "zh", label: "中文", group: "Z" }, { code: "en", label: "英语", group: "E" }, { code: "ja", label: "日语", group: "J" }, { code: "ko", label: "韩语", group: "K" }, { code: "fr", label: "法语", group: "F" }, { code: "es", label: "西班牙语", group: "E" }, { code: "de", label: "德语", group: "D" }, { code: "ru", label: "俄语", group: "R" }, { code: "pt", label: "葡萄牙语", group: "P" }, { code: "it", label: "意大利语", group: "I" }, { code: "ar", label: "阿拉伯语", group: "A" }, { code: "th", label: "泰语", group: "T" }, { code: "vi", label: "越南语", group: "V" }, { code: "id", label: "印度尼西亚语", group: "I" }, { code: "ms", label: "马来语", group: "M" }, { code: "hi", label: "印地语", group: "H" }, { code: "din", label: "丁卡语", group: "D" }, { code: "hsb", label: "上索布语", group: "H" }, { code: "dsb", label: "下索布语", group: "D" }, { code: "eo", label: "世界语", group: "E" }, { code: "crl", label: "东北部克里语", group: "C" }, { code: "crj", label: "东南部克里语", group: "C" }, { code: "frs", label: "东弗里西亚语", group: "F" }, { code: "ses", label: "东桑海语", group: "S" }, { code: "frm", label: "中古法语", group: "F" }, { code: "mga", label: "中古爱尔兰语", group: "M" }, { code: "enm", label: "中古英语", group: "E" }, { code: "dum", label: "中古荷兰语", group: "D" }, { code: "gmh", label: "中古高地德语", group: "G" }, { code: "ojc", label: "中奥吉布瓦语", group: "O" }, { code: "ckb", label: "中库尔德语", group: "C" }, { code: "fon", label: "丰语", group: "F" }, { code: "da", label: "丹麦语", group: "D" }, { code: "uk", label: "乌克兰语", group: "U" }, { code: "uz", label: "乌兹别克语", group: "U" }, { code: "uga", label: "乌加里特语", group: "U" }, { code: "ur", label: "乌尔都语", group: "U" }, { code: "udm", label: "乌德穆尔特语", group: "U" }, { code: "shu", label: "乍得阿拉伯语", group: "S" }, { code: "cho", label: "乔克托语", group: "C" }, { code: "nb", label: "书面挪威语", group: "N" }, { code: "agq", label: "亚罕语", group: "A" }, { code: "hy", label: "亚美尼亚语", group: "H" }, { code: "ace", label: "亚齐语", group: "A" }, { code: "tl", label: "他加禄语", group: "T" }, { code: "ik", label: "伊努皮克语", group: "I" }, { code: "ig", label: "伊博语", group: "I" }, { code: "io", label: "伊多语", group: "I" }, { code: "ibb", label: "伊比比奥语", group: "I" }, { code: "ilo", label: "伊洛卡诺语", group: "I" }, { code: "iba", label: "伊班语", group: "I" }, { code: "smn", label: "伊纳里萨米语", group: "S" }, { code: "lmo", label: "伦巴第语", group: "L" }, { code: "nds", label: "低地德语", group: "N" }, { code: "bg", label: "保加利亚语", group: "B" }, { code: "sd", label: "信德语", group: "S" }, { code: "bal", label: "俾路支语", group: "B" }, { code: "si", label: "僧伽罗语", group: "S" }, { code: "qu", label: "克丘亚语", group: "Q" }, { code: "ks", label: "克什米尔语", group: "K" }, { code: "kpe", label: "克佩列语", group: "K" }, { code: "tlh", label: "克林贡语", group: "T" }, { code: "hr", label: "克罗地亚语", group: "H" }, { code: "kfo", label: "克罗语", group: "K" }, { code: "mus", label: "克里克语", group: "M" }, { code: "crh", label: "克里米亚鞑靼语", group: "C" }, { code: "cr", label: "克里语", group: "C" }, { code: "kac", label: "克钦语", group: "K" }, { code: "rof", label: "兰博语", group: "R" }, { code: "lam", label: "兰巴语", group: "L" }, { code: "gon", label: "冈德语", group: "G" }, { code: "is", label: "冰岛语", group: "I" }, { code: "ii", label: "凉山彝语", group: "I" }, { code: "chr", label: "切罗基语", group: "C" }, { code: "lez", label: "列兹金语", group: "L" }, { code: "kg", label: "刚果语", group: "K" }, { code: "lij", label: "利古里亚语", group: "L" }, { code: "lil", label: "利洛埃特语", group: "L" }, { code: "gl", label: "加利西亚语", group: "G" }, { code: "car", label: "加勒比语", group: "C" }, { code: "gag", label: "加告兹语", group: "G" }, { code: "gaa", label: "加族语", group: "G" }, { code: "ca", label: "加泰罗尼亚语", group: "C" }, { code: "kbl", label: "加涅姆布语", group: "K" }, { code: "nus", label: "努埃尔语", group: "N" }, { code: "hu", label: "匈牙利语", group: "H" }, { code: "lrc", label: "北卢尔语", group: "L" }, { code: "ttm", label: "北塔穹语", group: "T" }, { code: "frr", label: "北弗里西亚语", group: "F" }, { code: "nd", label: "北恩德贝勒语", group: "N" }, { code: "se", label: "北方萨米语", group: "S" }, { code: "twq", label: "北桑海语", group: "T" }, { code: "nso", label: "北索托语", group: "N" }, { code: "slh", label: "南卢舒特种子语", group: "S" }, { code: "tce", label: "南塔穹语", group: "T" }, { code: "sdh", label: "南库尔德语", group: "S" }, { code: "nr", label: "南恩德贝勒语", group: "N" }, { code: "hax", label: "南海达语", group: "H" }, { code: "st", label: "南索托语", group: "S" }, { code: "sma", label: "南萨米语", group: "S" }, { code: "alt", label: "南阿尔泰语", group: "A" }, { code: "af", label: "南非荷兰语", group: "A" }, { code: "brx", label: "博多语", group: "B" }, { code: "bho", label: "博杰普尔语", group: "B" }, { code: "kln", label: "卡伦金语", group: "K" }, { code: "kr", label: "卡努里语", group: "K" }, { code: "kcg", label: "卡塔布语", group: "K" }, { code: "cad", label: "卡多语", group: "C" }, { code: "kam", label: "卡姆巴语", group: "K" }, { code: "kaw", label: "卡威语", group: "K" }, { code: "xal", label: "卡尔梅克语", group: "X" }, { code: "cay", label: "卡尤加语", group: "C" }, { code: "kbd", label: "卡巴尔德语", group: "K" }, { code: "kea", label: "卡布佛得鲁语", group: "K" }, { code: "kkj", label: "卡库语", group: "K" }, { code: "kaa", label: "卡拉卡尔帕克语", group: "K" }, { code: "krc", label: "卡拉恰伊巴尔卡尔语", group: "K" }, { code: "kab", label: "卡拜尔语", group: "K" }, { code: "kaj", label: "卡捷语", group: "K" }, { code: "frc", label: "卡真法语", group: "F" }, { code: "krl", label: "卡累利阿语", group: "K" }, { code: "kn", label: "卡纳达语", group: "K" }, { code: "crr", label: "卡罗莱纳州阿尔冈昆语", group: "C" }, { code: "csb", label: "卡舒比语", group: "C" }, { code: "kha", label: "卡西语", group: "K" }, { code: "lui", label: "卢伊塞诺语", group: "L" }, { code: "luo", label: "卢奥语", group: "L" }, { code: "lua", label: "卢巴-卢拉语", group: "L" }, { code: "lg", label: "卢干达语", group: "L" }, { code: "rw", label: "卢旺达语", group: "R" }, { code: "lb", label: "卢森堡语", group: "L" }, { code: "luy", label: "卢雅语", group: "L" }, { code: "inh", label: "印古什语", group: "I" }, { code: "myv", label: "厄尔兹亚语", group: "M" }, { code: "syr", label: "叙利亚语", group: "S" }, { code: "syc", label: "古典叙利亚语", group: "S" }, { code: "nwc", label: "古典尼瓦尔语", group: "N" }, { code: "gu", label: "古吉拉特语", group: "G" }, { code: "egy", label: "古埃及语", group: "E" }, { code: "grc", label: "古希腊语", group: "G" }];
+function TranslationLanguagePicker({ value, disabled, onSelect }) {
+  const common = ["zh", "en", "ja", "ko", "fr", "es", "de", "ru"], root = p.useRef(null), groups = [...new Set(TRANSLATION_LANGUAGES.map((x) => x.group))].sort();
+  const jump = (g) => root.current == null ? void 0 : root.current.querySelector(`[data-lang-group="${g}"]`)?.scrollIntoView({ block: "start", behavior: "smooth" });
+  return n.jsxs("div", { className: "translation-language-picker", children: [
+    n.jsx("div", { className: "translation-common", children: common.map((code) => { const x = TRANSLATION_LANGUAGES.find((l) => l.code === code); return x && n.jsx("button", { className: value === code ? "active" : "", disabled, onClick: () => onSelect(code), children: x.label }, code); }) }),
+    n.jsxs("div", { className: "translation-all-wrap", children: [
+      n.jsx("div", { className: "translation-all", ref: root, children: groups.map((g) => n.jsxs("section", { "data-lang-group": g, children: [n.jsx("b", { children: g }), n.jsx("div", { children: TRANSLATION_LANGUAGES.filter((x) => x.group === g).map((x) => n.jsx("button", { className: value === x.code ? "active" : "", disabled, onClick: () => onSelect(x.code), children: x.label }, x.code)) })] }, g)) }),
+      n.jsx("nav", { className: "translation-index", children: groups.map((g) => n.jsx("button", { type: "button", onClick: () => jump(g), children: g }, g)) })
+    ] })
+  ] });
+}
 let defaultTranslationLanguagePromise = null;
 function resetDefaultTranslationLanguage() { defaultTranslationLanguagePromise = null; }
 async function getDefaultTranslationLanguage() {
