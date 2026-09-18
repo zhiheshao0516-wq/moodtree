@@ -13201,7 +13201,6 @@ function Xv({ onCancel: r, onPublish: u, user: o, publishRoomId: c, flash: m }) 
     const [vioList, setVioList] = p.useState([]);
   p.useRef(new Map());
   const we = p.useRef(null);
-  const publishImeRef = p.useRef(!1);
   const checkLocal = (Gr) => {
     const Jn = Gr.toLowerCase(), Ei = [];
     const Vy = ['操你','操你妈','操你娘','操你祖宗','操你老妈','操你老母','操妳','操妳妈','操妳娘','操比','操逼','草你妈','草泥马','草你娘','草吗','草拟妈','肏你','肏死','操死','他妈的','他妈地','他马的','他妈','他娘','妈的','妈b','妈个b','妈比','妈逼','妈的b','妈个比','妈妈的','你妈','你妈的','你娘','你奶奶的','你她妈的','你它妈的','你他妈','你马的','去你妈的','傻逼','傻比','傻b','傻bi','煞笔','煞逼','脑残','脑瘫','废物','垃圾','辣鸡','腊鸡','沙雕','韭菜','白痴','笨蛋','蠢货','蠢猪','猪头','混蛋','王八蛋','鳖孙','贱人','贱货','贱b','贱逼','婊子','婊子养的','荡妇','浪女','骚货','骚比','骚逼','骚女','烂货','烂逼','绿茶婊','心机婊','撩骚','鸡巴','鸡吧','鸡叭','几把','几巴','几叭','鸡鸡','小鸡鸡','鸡奸','阳具','阴茎','阴道','阴户','阴唇','阴核','阴毛','龟头','屌丝','逼样','乳头','乳房','奶子','巨乳','做爱','性交','性器','性无能','强奸','轮奸','妓女','妓院','嫖娼','嫖客','卖淫','招妓','姘头','炮友','一夜情','援交','援助交际','自慰','手淫','打飞机','打炮','狗日的','狗娘养的','狗屁','狗屎','狗杂种','杂种','野种','孽种','畜生','畜牲','狗东西','去死','去死吧','你完蛋了','找死','作死','该死','找抽','找打','弄死你','弄死','打死你','干你','干你妈','干你娘','干你老母','干死你','干死','干妳妈','幹你娘','幹','靠北','靠爸','靠腰','靠母','靠背','屁眼','射精','精子','内射','颜射','口交','肛交','吹箫','叫床','潮吹','nmsl','wcnm','wocao','woc','tmd','nmb','wdnmd','cnm','wtf','stfu','kys','kmt','sb'];
@@ -13712,7 +13711,7 @@ function Xv({ onCancel: r, onPublish: u, user: o, publishRoomId: c, flash: m }) 
             ],
           }),
           n.jsxs("label", {
-            children: ["给这份心情一个标题", n.jsx("input", { value: d, onCompositionStart: () => { publishImeRef.current = !0; }, onCompositionEnd: (O) => { publishImeRef.current = !1; h(O.currentTarget.value); }, onChange: (O) => { if (!publishImeRef.current) h(O.target.value); }, maxLength: 50, placeholder: "比如：今天发生了一件让我很难过的事…", required: !0 }), n.jsxs("small", { children: [d.length, "/50"] })],
+            children: ["给这份心情一个标题", n.jsx("input", { value: d, onChange: (O) => h(O.target.value), maxLength: 50, placeholder: "比如：今天发生了一件让我很难过的事…", required: !0 }), n.jsxs("small", { children: [d.length, "/50"] })],
           }),
           n.jsxs("label", {
             children: [
@@ -13796,9 +13795,7 @@ function Xv({ onCancel: r, onPublish: u, user: o, publishRoomId: c, flash: m }) 
                   n.jsx("textarea", {
                     ref: we,
                     value: v,
-                    onCompositionStart: () => { publishImeRef.current = !0; },
-                    onCompositionEnd: (O) => { publishImeRef.current = !1; const M = O.currentTarget.value; j(M); gt(null); checkLocal(M); },
-                    onChange: (O) => { if (!publishImeRef.current) { j(O.target.value); gt(null); checkLocal(O.target.value); } },
+                    onChange: (O) => { const M = O.target.value; j(M); gt(null); checkLocal(M); },
                     maxLength: 1e4,
                     placeholder: "不用组织语言，想到什么就写什么。我们会认真听你说…",
                     required: !0,
