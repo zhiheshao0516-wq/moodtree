@@ -14413,7 +14413,7 @@ function Gv({ post: r, onBack: u, react: o, update: c, user: m, onStartDM: d, fl
                                     value: S,
                                     onChange: (se) => { T(se.target.value); Y(null); _checkCommentVio(se.target.value); },
                                     placeholder: "写下一句温柔的话…",
-                                    style: { position: "relative", zIndex: 1, background: "transparent", color: "transparent", caretColor: "#546158", border: 0, resize: "none", fontSize: "11px", padding: "3px", width: "100%", height: "48px" },
+                                    style: { position: "relative", zIndex: 1, background: "transparent", color: "#3a4a40", caretColor: "#546158", border: 0, resize: "none", fontSize: "11px", padding: "3px", width: "100%", height: "48px" },
                                   }),
                                 ],
                               }),
