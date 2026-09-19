@@ -11737,16 +11737,6 @@ function Ov({ color: r, onChange: u }) {
     ],
   });
 }
-const _v = [
-  { name: "暖阳", value: "linear-gradient(135deg, #f6d365 0%, #fda085 100%)" },
-  { name: "森绿", value: "linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)" },
-  { name: "海蓝", value: "linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%)" },
-  { name: "薰衣草", value: "linear-gradient(135deg, #c471f5 0%, #fa71cd 100%)" },
-  { name: "夜空", value: "linear-gradient(135deg, #2c3e50 0%, #4ca1af 100%)" },
-  { name: "奶白", value: "linear-gradient(135deg, #fdfbf7 0%, #ebedee 100%)" },
-  { name: "桃粉", value: "linear-gradient(135deg, #ffd3a5 0%, #fd6585 100%)" },
-  { name: "薄荷", value: "linear-gradient(135deg, #d4fc79 0%, #96e6a1 100%)" },
-];
 function Uv() {
   const [r, u] = p.useState("home"),
     [o, c] = p.useState([]),
@@ -13529,7 +13519,7 @@ function Xv({ onCancel: r, onPublish: u, user: o, publishRoomId: c, flash: m }) 
                 style: { display: "flex", gap: "10px" },
                 children: [
                   n.jsx("button", { className: "primary", style: { flex: 1 }, onClick: () => Vt(Ve), children: "继续编辑" }),
-                  n.jsx("button", { style: { flex: 1, background: "none", border: "1px solid #ddd", borderRadius: "12px", cursor: "pointer", fontSize: "14px" }, onClick: St, children: "重新开始" }),
+                  n.jsx("button", { style: { flex: 1, background: "transparent", color: "#3a4a40", border: "1px solid #c9d2cc", borderRadius: "999px", minHeight: "44px", cursor: "pointer", fontSize: "14px" }, onClick: St, children: "重新开始" }),
                 ],
               }),
             ],
@@ -17313,18 +17303,6 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
       const ce = z.slice(10, -11).split("|");
       return { coord: ce[0] || "", url: ce[1] || "" };
     },
-    ua = (z) => {
-      zt.current = window.setTimeout(() => {
-        const te = window.getSelection();
-        (!te || !te.toString().trim()) && fe(z);
-      }, 650);
-    },
-    Ot = () => {
-      zt.current && clearTimeout(zt.current);
-    },
-    yn = (z, te) => {
-      (z.preventDefault(), fe(te));
-    },
     jn = (z) => {
       (fe(null), ki(z.content) && (Wi(z.content), d("已复制")));
     },
@@ -17472,21 +17450,6 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
         onClick: () => {
           (D(!1), K(!1));
         },
-        onMouseUp: (te) => {
-          const sel = window.getSelection();
-          const txt = sel ? sel.toString().trim() : "";
-          if (txt.length > 0) {
-            let node = sel.anchorNode;
-            while (node && !(node instanceof HTMLElement)) node = node.parentNode;
-            let el = node;
-            while (el && !el.classList?.contains("chat-msg")) el = el.parentElement;
-            if (el) {
-              const msgId = el.getAttribute("data-msg-id");
-              const msg = C.find((m) => String(m.id) === msgId);
-              if (msg) fe(msg);
-            }
-          }
-        },
         children: [
           k
             ? n.jsx("div", { className: "chat-loading", children: "加载中…" })
@@ -17498,10 +17461,6 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
                     {
                       "data-msg-id": z.id,
                       className: `chat-msg ${z.from === r.id ? "mine" : "other"} ${he ? "multi-select" : ""} ${ze.has(z.id) ? "selected" : ""}`,
-                      onTouchStart: () => !he && ua(z),
-                      onTouchEnd: he ? void 0 : Ot,
-                      onTouchMove: he ? void 0 : Ot,
-                      onContextMenu: he ? void 0 : (te) => yn(te, z),
                       onClick: he ? () => dn(z.id) : void 0,
                       children: [
                         he && n.jsx("div", { className: `msg-checkbox ${ze.has(z.id) ? "checked" : ""}`, children: ze.has(z.id) ? "✓" : "" }),
@@ -17870,9 +17829,9 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
                 Se && n.jsxs("div", { className: "voice-recording-indicator", children: [n.jsx("span", { className: "voice-dot" }), "正在录音，说完后点击⏹停止"] }),
               ],
             })),
-      le &&
+      false && le &&
         n.jsx("div", {
-          className: "msg-action-overlay",
+          className: "legacy-action-disabled",
           onClick: () => fe(null),
           children: n.jsx("div", {
             className: "msg-action-menu",
@@ -18067,7 +18026,7 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
                 children: [
                   h &&
                     n.jsxs("div", {
-                      className: "chat-info-profile",
+                      className: "chat-info-profile chat-info-group",
                       children: [
                         n.jsx(qt, { user: h, size: 56 }),
                         n.jsxs("div", { children: [n.jsx("b", { children: h.alias || h.nickname }), h.alias && n.jsxs("small", { children: ["原昵称: ", h.nickname] }), n.jsx("small", { children: h.id })] }),
@@ -18076,7 +18035,7 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
                   !h &&
                     u === "room" &&
                     n.jsxs("div", {
-                      className: "chat-info-profile",
+                      className: "chat-info-profile chat-info-group",
                       children: [n.jsx("div", { className: "chat-list-avatar room-avatar", style: { width: 56, height: 56, fontSize: 26 }, children: "◈" }), n.jsx("div", { children: n.jsx("b", { children: c }) })],
                     }),
                   Ze && h
@@ -18099,67 +18058,38 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
                     : n.jsxs("div", {
                         className: "chat-info-list",
                         children: [
-                          h &&
+                          h && n.jsx("div", { className: "chat-info-group", children:
                             n.jsxs("div", {
                               className: "chat-info-item",
                               onClick: () => {
                                 (Ge(h.alias || ""), Fe(!0));
                               },
-                              children: [n.jsx("span", { children: "设置备注" }), n.jsx("span", { className: "chat-info-value", children: h.alias || "未设置" })],
+                              children: [n.jsx("span", { children: "设置备注" }), n.jsxs("span", { className: "chat-info-trailing", children: [n.jsx("span", { className: "chat-info-value", children: h.alias || "未设置" }), n.jsx("span", { className: "chat-info-arrow", children: ">" })] })],
                             }),
-                          n.jsxs("div", {
-                            className: "chat-info-item",
-                            onClick: rt,
-                            children: [n.jsx("span", { children: "置顶聊天" }), n.jsx("span", { className: `chat-info-toggle ${Q ? "on" : ""}`, children: n.jsx("span", { className: "toggle-knob" }) })],
                           }),
-                          n.jsxs("div", {
-                            className: "chat-info-item",
-                            onClick: ht,
-                            children: [n.jsx("span", { children: "消息免打扰" }), n.jsx("span", { className: `chat-info-toggle ${Ne ? "on" : ""}`, children: n.jsx("span", { className: "toggle-knob" }) })],
-                          }),
-                          n.jsxs("div", {
-                            className: "chat-info-item",
-                            onClick: () => ve(!xe),
-                            children: [n.jsx("span", { children: "设置聊天背景" }), Ue && n.jsx("span", { className: "chat-info-value", children: "已设置" })],
-                          }),
-                          xe &&
+                          n.jsxs("div", { className: "chat-info-group", children: [
                             n.jsxs("div", {
-                              className: "bg-picker-section",
-                              children: [
-                                n.jsx("div", { className: "bg-picker-label", children: "从图库选择" }),
-                                n.jsxs("div", {
-                                  className: "bg-picker-grid",
-                                  children: [
-                                    _v.map((z) =>
-                                      n.jsx(
-                                        "div",
-                                        {
-                                          className: `bg-preset-item ${Ue === z.value ? "selected" : ""}`,
-                                          style: { background: z.value },
-                                          onClick: () => {
-                                            (Te.setItem(M, z.value), _e(z.value), ve(!1), d(`背景已切换：${z.name}`));
-                                          },
-                                          children: n.jsx("span", { children: z.name }),
-                                        },
-                                        z.name,
-                                      ),
-                                    ),
-                                    n.jsxs("div", {
-                                      className: "bg-preset-item bg-custom",
-                                      onClick: () => {
-                                        var z;
-                                        return (z = Le.current) == null ? void 0 : z.click();
-                                      },
-                                      children: [n.jsx("span", { children: "📷" }), n.jsx("span", { children: "自定义" })],
-                                    }),
-                                  ],
-                                }),
-                              ],
+                              className: "chat-info-item",
+                              onClick: rt,
+                              children: [n.jsx("span", { children: "置顶聊天" }), n.jsx("span", { className: `chat-info-toggle ${Q ? "on" : ""}`, children: n.jsx("span", { className: "toggle-knob" }) })],
                             }),
+                            n.jsxs("div", {
+                              className: "chat-info-item",
+                              onClick: ht,
+                              children: [n.jsx("span", { children: "消息免打扰" }), n.jsx("span", { className: `chat-info-toggle ${Ne ? "on" : ""}`, children: n.jsx("span", { className: "toggle-knob" }) })],
+                            }),
+                          ] }),
+                          n.jsx("div", { className: "chat-info-group", children: n.jsxs("div", {
+                            className: "chat-info-item",
+                            onClick: () => Le.current && Le.current.click(),
+                            children: [n.jsx("span", { children: "设置聊天背景" }), n.jsxs("span", { className: "chat-info-trailing", children: [Ue && n.jsx("span", { className: "chat-info-value", children: "已设置" }), n.jsx("span", { className: "chat-info-arrow", children: ">" })] })],
+                          }) }),
                           n.jsx("input", { ref: Le, type: "file", accept: "image/*", className: "chat-bg-file-input", onChange: (z) => { const te = z.target.files && z.target.files[0]; z.target.value = ""; te && Nt(te); } }),
-                          Ue && n.jsxs("div", { className: "chat-info-item danger", onClick: ba, children: [n.jsx("span", { children: "恢复默认背景" })] }),
-                          n.jsxs("div", { className: "chat-info-item danger", onClick: se, children: [n.jsx("span", { children: "清空聊天记录" })] }),
-                          h && n.jsxs("div", { className: "chat-info-item danger", onClick: ge, children: [n.jsx("span", { children: "删除好友" })] }),
+                          n.jsxs("div", { className: "chat-info-group chat-info-danger-group", children: [
+                            Ue && n.jsxs("div", { className: "chat-info-item danger", onClick: ba, children: [n.jsx("span", { children: "恢复默认背景" })] }),
+                            n.jsxs("div", { className: "chat-info-item danger", onClick: se, children: [n.jsx("span", { children: "清空聊天记录" })] }),
+                            h && n.jsxs("div", { className: "chat-info-item danger", onClick: ge, children: [n.jsx("span", { children: "删除好友" })] }),
+                          ] }),
                         ],
                       }),
                 ],
@@ -18953,6 +18883,9 @@ function e0({ posts: r, openPost: u, user: o, onSignOut: c, onEditProfile: m, on
     [Sn, Wn] = p.useState(!1),
     [Fn, z] = p.useState(""),
     [te, ce] = p.useState(""),
+    birthdayYearRef = p.useRef(null),
+    birthdayMonthRef = p.useRef(null),
+    birthdayDayRef = p.useRef(null),
     Xe = async () => {
       if ((wt(""), Fa(""), !Ot)) {
         wt("请输入新密码");
@@ -19761,18 +19694,32 @@ function e0({ posts: r, openPost: u, user: o, onSignOut: c, onEditProfile: m, on
                             }),
                             n.jsxs("label", {
                               children: [
-                                n.jsxs("span", { children: [n.jsx("b", { children: "🎂 我的生日" }), n.jsx("small", { children: "生日当天会收到专属祝福（格式：MM-DD 或 YYYY-MM-DD）" })] }),
-                                n.jsx("input", {
-                                  type: "text",
-                                  inputMode: "numeric",
-                                  className: "birthday-input",
-                                  placeholder: "年-月-日",
-                                  value: Ll,
-                                  onChange: (g) => {
-                                    const digits = g.target.value.replace(/\D/g, "").slice(0, 8), formatted = digits.length > 4 ? `${digits.slice(0,4)}-${digits.slice(4,6)}${digits.length > 6 ? `-${digits.slice(6,8)}` : ""}` : digits;
-                                    Jn(formatted);
+                                n.jsxs("span", { children: [n.jsx("b", { children: "🎂 我的生日" }), n.jsx("small", { children: "生日当天会收到专属祝福" })] }),
+                                n.jsxs("div", {
+                                  className: "birthday-segments birthday-input",
+                                  onBlur: (g) => {
+                                    if (g.currentTarget.contains(g.relatedTarget)) return;
+                                    /^\d{4}-\d{2}-\d{2}$/.test(Ll) && pe("/api/user/profile", { userId: o.id, birthday: Ll }).then(() => h("生日已保存，届时会有惊喜 🎂")).catch(() => h("保存失败"));
                                   },
-                                  onBlur: () => { if (/^\d{4}-\d{2}-\d{2}$/.test(Ll)) pe("/api/user/profile", { userId: o.id, birthday: Ll }).then(() => h("生日已保存，届时会有惊喜 🎂")).catch(() => h("保存失败")); },
+                                  children: [
+                                    n.jsx("input", {
+                                      ref: birthdayYearRef, inputMode: "numeric", maxLength: 4, placeholder: "年", value: (Ll.split("-")[0] || "").slice(0, 4),
+                                      onChange: (g) => { const value = g.target.value.replace(/\D/g, "").slice(0, 4), parts = Ll.split("-"); Jn(`${value}-${parts[1] || ""}-${parts[2] || ""}`); value.length === 4 && birthdayMonthRef.current && birthdayMonthRef.current.focus(); },
+                                      onPaste: (g) => { const digits = g.clipboardData.getData("text").replace(/\D/g, "").slice(0, 8); if (digits.length >= 6) { g.preventDefault(); Jn(`${digits.slice(0, 4)}-${digits.slice(4, 6)}-${digits.slice(6, 8)}`); birthdayDayRef.current && birthdayDayRef.current.focus(); } },
+                                    }),
+                                    n.jsx("span", { children: "-" }),
+                                    n.jsx("input", {
+                                      ref: birthdayMonthRef, inputMode: "numeric", maxLength: 2, placeholder: "月", value: (Ll.split("-")[1] || "").slice(0, 2),
+                                      onChange: (g) => { const value = g.target.value.replace(/\D/g, "").slice(0, 2), parts = Ll.split("-"); Jn(`${parts[0] || ""}-${value}-${parts[2] || ""}`); value.length === 2 && birthdayDayRef.current && birthdayDayRef.current.focus(); },
+                                      onKeyDown: (g) => { g.key === "Backspace" && !g.currentTarget.value && birthdayYearRef.current && birthdayYearRef.current.focus(); },
+                                    }),
+                                    n.jsx("span", { children: "-" }),
+                                    n.jsx("input", {
+                                      ref: birthdayDayRef, inputMode: "numeric", maxLength: 2, placeholder: "日", value: (Ll.split("-")[2] || "").slice(0, 2),
+                                      onChange: (g) => { const value = g.target.value.replace(/\D/g, "").slice(0, 2), parts = Ll.split("-"); Jn(`${parts[0] || ""}-${parts[1] || ""}-${value}`); },
+                                      onKeyDown: (g) => { g.key === "Backspace" && !g.currentTarget.value && birthdayMonthRef.current && birthdayMonthRef.current.focus(); },
+                                    }),
+                                  ],
                                 }),
                               ],
                             }),
