@@ -16894,6 +16894,14 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
     [multiSelect, setMultiSelect] = p.useState(!1),
     [selectedMessages, setSelectedMessages] = p.useState(new Set()),
     [forwardState, setForwardState] = p.useState(null),
+    [remindMsg, setRemindMsg] = p.useState(null),
+    [rpD, setRpD] = p.useState(0),
+    [rpH, setRpH] = p.useState(0),
+    [rpM, setRpM] = p.useState(0),
+    [remindBanner, setRemindBanner] = p.useState(null),
+    rpWheelD = p.useRef(null),
+    rpWheelH = p.useRef(null),
+    rpWheelM = p.useRef(null),
     longPressRef = p.useRef(null),
     $e = p.useRef(null),
     jt = p.useRef([]),
@@ -17370,10 +17378,28 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
       (setActionMsg(null), ee(z));
     },
     remindMessage = (z, delay) => {
-      const te = { id: `reminder_${Date.now()}`, at: Date.now() + delay, text: z.content, chatTarget: o };
+      const te = { id: `reminder_${Date.now()}`, at: Date.now() + delay, text: z.content, chatTarget: o, msgId: z.id };
       let ce = [];
       try { ce = JSON.parse(Te.getItem("moodtree-chat-reminders") || "[]"); } catch {}
       (Te.setItem("moodtree-chat-reminders", JSON.stringify([...ce, te])), setActionMsg(null), d("提醒已设置"));
+    },
+    rpDays = Array.from({ length: 7 }, (z, i) => { const te = new Date(); te.setDate(te.getDate() + i); const ce = "日一二三四五六"[te.getDay()]; return i === 0 ? `今天 周${ce}` : i === 1 ? `明天 周${ce}` : `${te.getMonth() + 1}月${te.getDate()}日 周${ce}`; }),
+    openRemindPicker = () => {
+      const z = new Date();
+      (setRemindMsg(actionMsg), setActionMsg(null), setRpD(0), setRpH((z.getHours() + 1) % 24), setRpM(0));
+      setTimeout(() => {
+        rpWheelD.current && (rpWheelD.current.scrollTop = 0);
+        rpWheelH.current && (rpWheelH.current.scrollTop = ((z.getHours() + 1) % 24) * 44);
+        rpWheelM.current && (rpWheelM.current.scrollTop = 0);
+      }, 60);
+    },
+    rpConfirm = () => {
+      if (!remindMsg) return;
+      const z = new Date();
+      z.setHours(0, 0, 0, 0);
+      const te = new Date(z.getTime() + rpD * 864e5 + rpH * 36e5 + rpM * 6e4);
+      if (te.getTime() <= Date.now()) return d("提醒时间需晚于当前时间");
+      (remindMessage(remindMsg, te.getTime() - Date.now()), setRemindMsg(null));
     },
     searchMessage = (z) => {
       (setActionMsg(null), window.open(`https://www.baidu.com/s?wd=${encodeURIComponent(z.content)}`, "_blank", "noopener,noreferrer"));
@@ -17443,6 +17469,23 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
       const te = Jn(z);
       return te ? n.jsxs(n.Fragment, { children: [n.jsx("div", { className: "chat-quote", children: te.quote }), n.jsx("p", { children: te.text })] }) : n.jsx("p", { children: z });
     };
+  p.useEffect(() => {
+    const tick = () => {
+      let arr = [];
+      try { arr = JSON.parse(Te.getItem("moodtree-chat-reminders") || "[]"); } catch {}
+      if (!arr.length) return;
+      const now = Date.now();
+      const due = arr.filter((x) => x.at <= now);
+      if (!due.length) return;
+      Te.setItem("moodtree-chat-reminders", JSON.stringify(arr.filter((x) => x.at > now)));
+      const it = due[due.length - 1];
+      setRemindBanner({ text: it.text, chatTarget: it.chatTarget, msgId: it.msgId });
+      try { const AC = window.AudioContext || window.webkitAudioContext; const ac = new AC(); const osc = ac.createOscillator(); const gn = ac.createGain(); osc.connect(gn); gn.connect(ac.destination); osc.type = "sine"; osc.frequency.value = 880; gn.gain.setValueAtTime(0.001, ac.currentTime); gn.gain.exponentialRampToValueAtTime(0.25, ac.currentTime + 0.02); gn.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.6); osc.start(); osc.stop(ac.currentTime + 0.65); osc.onended = () => ac.close(); } catch {}
+    };
+    const timer = setInterval(tick, 15000);
+    tick();
+    return () => clearInterval(timer);
+  }, []);
   return n.jsxs("div", {
     className: "chat-view",
     children: [
@@ -17473,7 +17516,7 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
             : C.length === 0
               ? n.jsxs("div", { className: "chat-empty", children: [n.jsx("span", { children: "🌱" }), n.jsx("p", { children: "还没有消息，发一条吧～" })] })
               : C.map((z, msgIndex) => {
-                  const previous = C[msgIndex - 1], separated = !previous || (z.timestamp || 0) - (previous.timestamp || 0) > 300, showAvatar = z.from !== r.id && (!previous || previous.from !== z.from || separated);
+                  const previous = C[msgIndex - 1], separated = !previous || (z.timestamp || 0) - (previous.timestamp || 0) > 300;
                   return n.jsxs(n.Fragment, { children: [
                     separated && n.jsx("div", { className: "chat-time-divider", children: (() => { const d = z.timestamp ? new Date(z.timestamp * 1000) : new Date(z.time); if (isNaN(d.getTime())) return z.time.slice(11); const hm = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; const mid = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime(); const dd = Math.floor((mid(new Date()) - mid(d)) / 864e5); return dd <= 0 ? hm : dd === 1 ? `昨天 ${hm}` : dd < 7 ? `周${"日一二三四五六"[d.getDay()]} ${hm}` : `${d.getMonth() + 1}月${d.getDate()}日 ${hm}`; })() }),
                     n.jsxs("div", {
@@ -17486,13 +17529,11 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
                       onClick: multiSelect ? () => toggleMessageSelection(z.id) : void 0,
                       children: [
                         multiSelect && n.jsx("span", { className: `msg-checkbox ${selectedMessages.has(z.id) ? "checked" : ""}`, children: selectedMessages.has(z.id) ? "✓" : "" }),
-                        z.from !== r.id && (showAvatar
-                          ? n.jsx("span", { onClick: y ? (te) => { te.stopPropagation(); y(z.from); } : void 0, className: "chat-avatar-slot", children: n.jsx(qt, { user: { avatar: z.fromAvatar, avatarType: z.fromAvatarType, id: z.from }, size: 32 }) })
-                          : n.jsx("span", { className: "chat-avatar-slot empty", "aria-hidden": "true" })),
+                        n.jsx("span", { onClick: z.from !== r.id && y ? (te) => { te.stopPropagation(); y(z.from); } : void 0, className: "chat-avatar-slot", children: n.jsx(qt, { user: z.from === r.id ? { avatar: r.avatar, avatarType: r.avatarType, id: z.from } : { avatar: z.fromAvatar, avatarType: z.fromAvatarType, id: z.from }, size: 32 }) }),
                         n.jsxs("div", {
                           className: "chat-bubble",
                           children: [
-                            u === "room" && z.from !== r.id && showAvatar && n.jsx("span", { className: "chat-sender", children: z.fromNickname }),
+                            u === "room" && z.from !== r.id && n.jsx("span", { className: "chat-sender", children: z.fromNickname }),
                             Fn(z.content),
                             pt[z.id] && n.jsxs("div", { className: "chat-voice-text", children: ["📝 ", pt[z.id]] }),
                             x[z.id] && n.jsxs("div", { className: "chat-translated", children: [x[z.id]] }),
@@ -17514,9 +17555,38 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
         ...(actionMsg.from === r.id ? [["撤回", () => recallMessage(actionMsg)]] : []),
         ["多选", () => beginMultiSelect(actionMsg)],
         ["引用", () => quoteMessage(actionMsg)],
-        ["提醒", () => { const z = window.prompt("提醒时间：输入 1（1小时后）、2（今晚8点）、3（明天8点）或分钟数", "1"); if (!z) return; const te = new Date(), tonight = new Date(te.getFullYear(), te.getMonth(), te.getDate(), 20), tomorrow = new Date(te.getFullYear(), te.getMonth(), te.getDate() + 1, 8); const delay = z === "1" ? 3600000 : z === "2" ? Math.max(60000, tonight.getTime() - Date.now()) : z === "3" ? tomorrow.getTime() - Date.now() : Math.max(60000, Number(z) * 60000); remindMessage(actionMsg, delay); }],
+        ["提醒", () => openRemindPicker()],
         ["搜一搜", () => searchMessage(actionMsg)],
       ].map(([z, te]) => n.jsx("button", { type: "button", onClick: te, children: z }, z)) }) }) }),
+      remindMsg && n.jsx("div", {
+        className: "bd-picker-mask", onClick: () => setRemindMsg(null),
+        children: n.jsxs("div", {
+          className: "bd-picker", onClick: (z) => z.stopPropagation(),
+          children: [
+            n.jsxs("div", { className: "bd-picker-head", children: [n.jsx("button", { className: "bd-picker-cancel", onClick: () => setRemindMsg(null), children: "取消" }), n.jsx("span", { className: "bd-picker-title", children: "设置提醒时间" }), n.jsx("button", { className: "bd-picker-ok rp-ok", onClick: rpConfirm, children: "设置" })] }),
+            n.jsxs("div", { className: "bd-picker-body", children: [
+              n.jsx("div", { className: "bd-wheel", ref: rpWheelD, onScroll: (z) => { clearTimeout(z.currentTarget._t); z.currentTarget._t = setTimeout(() => setRpD(Math.min(6, Math.max(0, Math.round(z.currentTarget.scrollTop / 44)))), 120); }, children: [n.jsx("div", { className: "bd-wheel-pad" }), ...rpDays.map((ce, i) => n.jsx("div", { className: `bd-item ${i === rpD ? "on" : ""}`, onClick: () => { rpWheelD.current && (rpWheelD.current.scrollTo({ top: i * 44, behavior: "smooth" }), setRpD(i)); }, children: ce }, i)), n.jsx("div", { className: "bd-wheel-pad" })] }),
+              n.jsx("div", { className: "bd-wheel", ref: rpWheelH, onScroll: (z) => { clearTimeout(z.currentTarget._t); z.currentTarget._t = setTimeout(() => setRpH(Math.min(23, Math.max(0, Math.round(z.currentTarget.scrollTop / 44)))), 120); }, children: [n.jsx("div", { className: "bd-wheel-pad" }), ...Array.from({ length: 24 }, (z, i) => i).map((v) => n.jsx("div", { className: `bd-item ${v === rpH ? "on" : ""}`, onClick: () => { rpWheelH.current && (rpWheelH.current.scrollTo({ top: v * 44, behavior: "smooth" }), setRpH(v)); }, children: `${v}时` }, v)), n.jsx("div", { className: "bd-wheel-pad" })] }),
+              n.jsx("div", { className: "bd-wheel", ref: rpWheelM, onScroll: (z) => { clearTimeout(z.currentTarget._t); z.currentTarget._t = setTimeout(() => setRpM(Math.min(59, Math.max(0, Math.round(z.currentTarget.scrollTop / 44)))), 120); }, children: [n.jsx("div", { className: "bd-wheel-pad" }), ...Array.from({ length: 60 }, (z, i) => i).map((v) => n.jsx("div", { className: `bd-item ${v === rpM ? "on" : ""}`, onClick: () => { rpWheelM.current && (rpWheelM.current.scrollTo({ top: v * 44, behavior: "smooth" }), setRpM(v)); }, children: `${v}分` }, v)), n.jsx("div", { className: "bd-wheel-pad" })] }),
+            ] }),
+            n.jsxs("div", { className: "rp-quick", children: [["1小时后", 36e5], ["1天后", 864e5], ["1周后", 6048e5], ["1个月后", 2592e6]].map(([lbl, ms]) => n.jsx("button", { onClick: () => { (remindMessage(remindMsg, ms), setRemindMsg(null)); }, children: lbl }, lbl)) }),
+          ],
+        }),
+      }),
+      remindBanner && n.jsx("div", {
+        className: "chat-reminder-banner", onClick: () => {
+          if (remindBanner.chatTarget === o && remindBanner.msgId) {
+            const el = document.querySelector(`[data-msg-id="${remindBanner.msgId}"]`);
+            el && el.scrollIntoView({ behavior: "smooth", block: "center" });
+          }
+          setRemindBanner(null);
+        },
+        children: n.jsxs("div", { className: "chat-reminder-banner-inner", children: [
+          n.jsx("span", { className: "chat-reminder-icon", children: "⏰" }),
+          n.jsxs("div", { className: "chat-reminder-text", children: [n.jsx("b", { children: remindBanner.chatTarget === o ? "消息提醒" : "其他聊天的提醒" }), n.jsx("p", { children: String(remindBanner.text || "").slice(0, 60) })] }),
+          n.jsx("button", { className: "chat-reminder-close", onClick: (z) => { z.stopPropagation(); setRemindBanner(null); }, children: "×" }),
+        ] }),
+      }),
       forwardState && n.jsx("div", { className: "wechat-message-menu-overlay", onClick: () => setForwardState(null), children: n.jsxs("div", { className: "forward-contact-panel", onClick: (z) => z.stopPropagation(), children: [n.jsx("h3", { children: "选择转发对象" }), forwardState.friends.length ? forwardState.friends.map((z) => n.jsxs("button", { onClick: () => sendForward(z), children: [n.jsx(qt, { user: z, size: 36 }), n.jsx("span", { children: z.alias || z.nickname })] }, z.id)) : n.jsx("p", { children: "暂无可转发的好友" }), n.jsx("button", { className: "forward-cancel", onClick: () => setForwardState(null), children: "取消" })] }) }),
       multiSelect && n.jsxs("div", { className: "multi-select-bar", children: [n.jsxs("span", { children: ["已选 ", selectedMessages.size, " 条"] }), n.jsxs("div", { children: [n.jsx("button", { onClick: () => { setMultiSelect(!1); setSelectedMessages(new Set()); }, children: "取消" }), n.jsx("button", { disabled: selectedMessages.size === 0, onClick: deleteSelectedMessages, children: "删除自己的消息" })] })] }),
       n.jsx("style", {
@@ -17868,7 +17938,7 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
           children: n.jsxs("div", {
             className: "chat-info-panel",
             children: [
-              n.jsxs("div", { className: "chat-info-header", children: [n.jsx("button", { className: "back-button", onClick: () => U(!1), children: "←" }), n.jsx("h2", { children: "聊天信息" })] }),
+              n.jsxs("div", { className: "chat-info-header", children: [n.jsx("h2", { children: "聊天信息" })] }),
               n.jsxs("div", {
                 className: "chat-info-body",
                 children: [
@@ -17912,7 +17982,7 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
                               onClick: () => {
                                 (Ge(h.alias || ""), Fe(!0));
                               },
-                              children: [n.jsx("span", { children: "设置备注" }), n.jsxs("span", { className: "chat-info-trailing", children: [n.jsx("span", { className: "chat-info-value", children: h.alias || "未设置" }), n.jsx("span", { className: "chat-info-arrow", children: ">" })] })],
+                              children: [n.jsx("span", { children: "设置备注" }), n.jsxs("span", { className: "chat-info-trailing", children: [n.jsx("span", { className: "chat-info-value", children: h.alias || "未设置" })] })],
                             }),
                           }),
                           n.jsxs("div", { className: "chat-info-group", children: [
