@@ -11860,7 +11860,7 @@ function Uv() {
         clearTimeout(M);
         M = setTimeout(() => {
           const Ue = Q();
-          Ue && jt((Le) => (Le ? { ...Le, text: Ue.text, x: Ue.x, y: Ue.y } : { ...Ue, src: "sel" }));
+          Ue ? jt((Le) => (Le ? { ...Le, text: Ue.text, x: Ue.x, y: Ue.y } : { ...Ue, src: "sel" })) : jt(null);
         }, 280);
       };
     return (
@@ -13518,7 +13518,7 @@ function Xv({ onCancel: r, onPublish: u, user: o, publishRoomId: c, flash: m }) 
               n.jsxs("div", {
                 style: { display: "flex", gap: "10px" },
                 children: [
-                  n.jsx("button", { className: "primary", style: { flex: 1 }, onClick: () => Vt(Ve), children: "继续编辑" }),
+                  n.jsx("button", { style: { flex: 1, background: "var(--sage-dark)", color: "#fff", border: "1px solid #c9d2cc", borderRadius: "999px", minHeight: "44px", cursor: "pointer", fontSize: "14px", boxShadow: "none" }, onClick: () => Vt(Ve), children: "继续编辑" }),
                   n.jsx("button", { style: { flex: 1, background: "transparent", color: "#3a4a40", border: "1px solid #c9d2cc", borderRadius: "999px", minHeight: "44px", cursor: "pointer", fontSize: "14px" }, onClick: St, children: "重新开始" }),
                 ],
               }),
@@ -16890,6 +16890,11 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
     [gt, yt] = p.useState(!1),
     [fa, we] = p.useState(!1),
     [st, Mt] = p.useState(!1),
+    [actionMsg, setActionMsg] = p.useState(null),
+    [multiSelect, setMultiSelect] = p.useState(!1),
+    [selectedMessages, setSelectedMessages] = p.useState(new Set()),
+    [forwardState, setForwardState] = p.useState(null),
+    longPressRef = p.useRef(null),
     $e = p.useRef(null),
     jt = p.useRef([]),
     xa = p.useRef(0),
@@ -17038,7 +17043,18 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
         ca.current && ca.current.stop();
       },
       [],
-    ));
+    ),
+    p.useEffect(() => {
+      const z = () => {
+        let te = [];
+        try { te = JSON.parse(Te.getItem("moodtree-chat-reminders") || "[]"); } catch {}
+        const ce = Date.now(), Xe = te.filter((ut) => ut.at <= ce), aa = te.filter((ut) => ut.at > ce);
+        Xe.length && (Te.setItem("moodtree-chat-reminders", JSON.stringify(aa)), d(`提醒：${Xe[0].text}`));
+      };
+      z();
+      const te = window.setInterval(z, 30000);
+      return () => window.clearInterval(te);
+    }, []));
   const xn = p.useRef(0);
   (p.useEffect(() => {
     xn.current = 0;
@@ -17181,7 +17197,7 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
       }
     },
     el = async (z) => {
-      if ((fe(null), pt[z.id])) return;
+      if (pt[z.id]) return;
       const te = bn(z.content);
       d("转文字中…");
       try {
@@ -17298,6 +17314,70 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
       const ce = z.slice(10, -11).split("|");
       return { coord: ce[0] || "", url: ce[1] || "" };
     },
+    openMessageMenu = (z) => setActionMsg(z),
+    startMessagePress = (z) => {
+      longPressRef.current = window.setTimeout(() => {
+        const te = window.getSelection();
+        (!te || !te.toString().trim()) && openMessageMenu(z);
+      }, 650);
+    },
+    cancelMessagePress = () => {
+      longPressRef.current && clearTimeout(longPressRef.current);
+    },
+    copyMessage = async (z) => {
+      await Wi(z.content);
+      setActionMsg(null);
+      d("消息已复制");
+    },
+    recallMessage = async (z) => {
+      setActionMsg(null);
+      if (Math.floor(Date.now() / 1e3) - (z.timestamp || 0) > 86400) return d("超过24小时的消息不可撤回");
+      const te = await pe("/api/chat/delete", { msgId: z.id, userId: r.id });
+      if (te.error) return d(te.error);
+      (Dt.current.add(z.id), S((ce) => ce.filter((Xe) => Xe.id !== z.id)), d("已撤回"));
+    },
+    favoriteMessage = async (z) => {
+      setActionMsg(null);
+      const te = await pe("/api/collections", { userId: r.id, type: "chat", content: z.content, msgId: z.id, chatTarget: o });
+      d(te.error || "已收藏");
+    },
+    beginForward = async (z) => {
+      setActionMsg(null);
+      const te = await qe(`/api/friends/${r.id}`);
+      setForwardState({ message: z, friends: te.friends || [] });
+    },
+    sendForward = async (z) => {
+      if (!forwardState) return;
+      const te = [r.id, z.id].sort().join("_");
+      const ce = await pe("/api/chat/send", { type: "dm", target: te, from: r.id, content: `[转发]${forwardState.message.content}` });
+      ce.error ? d(ce.error) : (d("已转发"), setForwardState(null));
+    },
+    beginMultiSelect = (z) => {
+      setActionMsg(null);
+      setMultiSelect(!0);
+      setSelectedMessages(new Set([z.id]));
+    },
+    toggleMessageSelection = (z) => setSelectedMessages((te) => { const ce = new Set(te); ce.has(z) ? ce.delete(z) : ce.add(z); return ce; }),
+    deleteSelectedMessages = async () => {
+      const z = C.filter((te) => selectedMessages.has(te.id) && te.from === r.id);
+      for (const te of z) {
+        const ce = await pe("/api/chat/delete", { msgId: te.id, userId: r.id });
+        ce.error || Dt.current.add(te.id);
+      }
+      (S((te) => te.filter((ce) => !Dt.current.has(ce.id))), setSelectedMessages(new Set()), setMultiSelect(!1), d(`已删除${z.length}条自己的消息`));
+    },
+    quoteMessage = (z) => {
+      (setActionMsg(null), ee(z));
+    },
+    remindMessage = (z, delay) => {
+      const te = { id: `reminder_${Date.now()}`, at: Date.now() + delay, text: z.content, chatTarget: o };
+      let ce = [];
+      try { ce = JSON.parse(Te.getItem("moodtree-chat-reminders") || "[]"); } catch {}
+      (Te.setItem("moodtree-chat-reminders", JSON.stringify([...ce, te])), setActionMsg(null), d("提醒已设置"));
+    },
+    searchMessage = (z) => {
+      (setActionMsg(null), window.open(`https://www.baidu.com/s?wd=${encodeURIComponent(z.content)}`, "_blank", "noopener,noreferrer"));
+    },
     Aa = (z) => {
       var ce;
       if (Pe === z) {
@@ -17392,27 +17472,27 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
             ? n.jsx("div", { className: "chat-loading", children: "加载中…" })
             : C.length === 0
               ? n.jsxs("div", { className: "chat-empty", children: [n.jsx("span", { children: "🌱" }), n.jsx("p", { children: "还没有消息，发一条吧～" })] })
-              : C.map((z) =>
-                  n.jsxs(
-                    "div",
-                    {
+              : C.map((z, msgIndex) => {
+                  const previous = C[msgIndex - 1], separated = !previous || (z.timestamp || 0) - (previous.timestamp || 0) > 300, showAvatar = z.from !== r.id && (!previous || previous.from !== z.from || separated);
+                  return n.jsxs(n.Fragment, { children: [
+                    separated && n.jsx("div", { className: "chat-time-divider", children: z.time }),
+                    n.jsxs("div", {
                       "data-msg-id": z.id,
-                      className: `chat-msg ${z.from === r.id ? "mine" : "other"}`,
+                      className: `chat-msg ${z.from === r.id ? "mine" : "other"} ${previous && previous.from === z.from && !separated ? "chat-msg-grouped" : ""}`,
+                      onTouchStart: () => !multiSelect && startMessagePress(z),
+                      onTouchEnd: cancelMessagePress,
+                      onTouchMove: cancelMessagePress,
+                      onContextMenu: (te) => { te.preventDefault(); multiSelect || openMessageMenu(z); },
+                      onClick: multiSelect ? () => toggleMessageSelection(z.id) : void 0,
                       children: [
-                        z.from !== r.id &&
-                          n.jsx("span", {
-                            onClick: y
-                              ? (te) => {
-                                  (te.stopPropagation(), y(z.from));
-                                }
-                              : void 0,
-                            style: { cursor: "pointer", flexShrink: 0 },
-                            children: n.jsx(qt, { user: { avatar: z.fromAvatar, avatarType: z.fromAvatarType, id: z.from }, size: 32 }),
-                          }),
+                        multiSelect && n.jsx("span", { className: `msg-checkbox ${selectedMessages.has(z.id) ? "checked" : ""}`, children: selectedMessages.has(z.id) ? "✓" : "" }),
+                        z.from !== r.id && (showAvatar
+                          ? n.jsx("span", { onClick: y ? (te) => { te.stopPropagation(); y(z.from); } : void 0, className: "chat-avatar-slot", children: n.jsx(qt, { user: { avatar: z.fromAvatar, avatarType: z.fromAvatarType, id: z.from }, size: 32 }) })
+                          : n.jsx("span", { className: "chat-avatar-slot empty", "aria-hidden": "true" })),
                         n.jsxs("div", {
                           className: "chat-bubble",
                           children: [
-                            z.from !== r.id && n.jsx("span", { className: "chat-sender", children: z.fromNickname }),
+                            u === "room" && z.from !== r.id && showAvatar && n.jsx("span", { className: "chat-sender", children: z.fromNickname }),
                             Fn(z.content),
                             pt[z.id] && n.jsxs("div", { className: "chat-voice-text", children: ["📝 ", pt[z.id]] }),
                             x[z.id] && n.jsxs("div", { className: "chat-translated", children: [x[z.id]] }),
@@ -17421,13 +17501,24 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
                           ],
                         }),
                       ],
-                    },
-                    z.id,
-                  ),
-                ),
+                    }),
+                  ] }, z.id);
+                }),
           n.jsx("div", { ref: Kt }),
         ],
       }),
+      actionMsg && n.jsx("div", { className: "wechat-message-menu-overlay", onClick: () => setActionMsg(null), children: n.jsx("div", { className: "wechat-message-menu", onClick: (z) => z.stopPropagation(), children: n.jsx("div", { className: "wechat-message-menu-grid", children: [
+        ["复制", () => copyMessage(actionMsg)],
+        ["转发", () => beginForward(actionMsg)],
+        ["收藏", () => favoriteMessage(actionMsg)],
+        ...(actionMsg.from === r.id ? [["撤回", () => recallMessage(actionMsg)]] : []),
+        ["多选", () => beginMultiSelect(actionMsg)],
+        ["引用", () => quoteMessage(actionMsg)],
+        ["提醒", () => { const z = window.prompt("提醒时间：输入 1（1小时后）、2（今晚8点）、3（明天8点）或分钟数", "1"); if (!z) return; const te = new Date(), tonight = new Date(te.getFullYear(), te.getMonth(), te.getDate(), 20), tomorrow = new Date(te.getFullYear(), te.getMonth(), te.getDate() + 1, 8); const delay = z === "1" ? 3600000 : z === "2" ? Math.max(60000, tonight.getTime() - Date.now()) : z === "3" ? tomorrow.getTime() - Date.now() : Math.max(60000, Number(z) * 60000); remindMessage(actionMsg, delay); }],
+        ["搜一搜", () => searchMessage(actionMsg)],
+      ].map(([z, te]) => n.jsx("button", { type: "button", onClick: te, children: z }, z)) }) }) }),
+      forwardState && n.jsx("div", { className: "wechat-message-menu-overlay", onClick: () => setForwardState(null), children: n.jsxs("div", { className: "forward-contact-panel", onClick: (z) => z.stopPropagation(), children: [n.jsx("h3", { children: "选择转发对象" }), forwardState.friends.length ? forwardState.friends.map((z) => n.jsxs("button", { onClick: () => sendForward(z), children: [n.jsx(qt, { user: z, size: 36 }), n.jsx("span", { children: z.alias || z.nickname })] }, z.id)) : n.jsx("p", { children: "暂无可转发的好友" }), n.jsx("button", { className: "forward-cancel", onClick: () => setForwardState(null), children: "取消" })] }) }),
+      multiSelect && n.jsxs("div", { className: "multi-select-bar", children: [n.jsxs("span", { children: ["已选 ", selectedMessages.size, " 条"] }), n.jsxs("div", { children: [n.jsx("button", { onClick: () => { setMultiSelect(!1); setSelectedMessages(new Set()); }, children: "取消" }), n.jsx("button", { disabled: selectedMessages.size === 0, onClick: deleteSelectedMessages, children: "删除自己的消息" })] })] }),
       n.jsx("style", {
         children:
           ".emoji-picker{display:grid;grid-template-columns:repeat(10,1fr);gap:2px;padding:8px;background:#f8f6f2;border-top:1px solid #e8e4dc;max-height:200px;overflow-y:auto}.emoji-picker button{width:32px;height:32px;border:none;background:none;font-size:20px;cursor:pointer;border-radius:6px;display:flex;align-items:center;justify-content:center;transition:all 0.15s}.emoji-picker button:hover{background:var(--sage-soft,#e8f0ea);transform:scale(1.2)}",
@@ -17642,7 +17733,7 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
           (te && Nt(te), (z.target.value = ""));
         },
       }),
-      !he &&
+      !0 &&
         (R
           ? n.jsxs("div", {
               className: "voice-options-panel",
@@ -19158,14 +19249,16 @@ function e0({ posts: r, openPost: u, user: o, onSignOut: c, onEditProfile: m, on
                                           "div",
                                           {
                                             className: "mine-post-item",
-                                            children: n.jsxs("button", {
-                                              className: "mine-post-main",
-                                              onClick: () => M(g),
-                                              children: [
-                                                n.jsxs("div", { children: [n.jsxs("h3", { children: ["🗂 ", g.name] }), n.jsxs("p", { children: [(g.posts || []).length, " 篇心事"] }), n.jsx("small", { children: g.createdAt })] }),
-                                                n.jsx("b", { children: "›" }),
-                                              ],
-                                            }),
+                                            children: g.type === "chat"
+                                              ? n.jsxs("div", { className: "mine-post-main chat-collection-item", children: [n.jsx("span", { children: "💬" }), n.jsxs("div", { children: [n.jsx("h3", { children: "聊天收藏" }), n.jsx("p", { children: g.content }), n.jsx("small", { children: g.createdAt })] })] })
+                                              : n.jsxs("button", {
+                                                  className: "mine-post-main",
+                                                  onClick: () => M(g),
+                                                  children: [
+                                                    n.jsxs("div", { children: [n.jsxs("h3", { children: ["🗂 ", g.name] }), n.jsxs("p", { children: [(g.posts || []).length, " 篇心事"] }), n.jsx("small", { children: g.createdAt })] }),
+                                                    n.jsx("b", { children: "›" }),
+                                                  ],
+                                                }),
                                           },
                                           g.id,
                                         ),
@@ -20716,7 +20809,7 @@ function n0({ file: r, onCancel: u, onConfirm: o }) {
     children: [
       n.jsxs("div", {
         className: "avatar-cropper-topbar",
-        children: [n.jsx("button", { onClick: u, children: "取消" }), n.jsx("span", { style: { color: "#fff", fontSize: 15, fontWeight: 600 }, children: "裁剪头像" }), n.jsx("button", { className: "confirm-btn", onClick: ke, children: "选取" })],
+        children: [n.jsx("button", { onClick: u, children: "取消" }), n.jsx("span", { style: { color: "#fff", fontSize: 15, fontWeight: 600 }, children: "裁剪头像" }), n.jsx("span", { "aria-hidden": "true" })],
       }),
       n.jsxs("div", {
         className: "avatar-cropper-stage",
@@ -20738,6 +20831,7 @@ function n0({ file: r, onCancel: u, onConfirm: o }) {
             children: [n.jsx("div", { className: "avatar-cropper-preview", children: n.jsx("canvas", { ref: m }) }), n.jsx("span", { className: "avatar-cropper-preview-label", children: "预览效果" })],
           }),
           n.jsx("input", { type: "range", className: "avatar-cropper-slider", min: 1, max: 5, step: 0.01, value: Oe, onChange: Se }),
+          n.jsx("button", { className: "avatar-cropper-done", onClick: ke, children: "完成" }),
         ],
       }),
     ],

@@ -1,4 +1,4 @@
-import json, hashlib, hmac, time, urllib.parse, urllib.request, urllib.error, os, base64, random, datetime, re, copy, smtplib, ssl, ipaddress
+import json, hashlib, hmac, time, urllib.parse, urllib.request, urllib.error, os, base64, random, datetime, re, copy, smtplib, ssl, ipaddress, secrets
 from email.message import EmailMessage
 
 # Force Asia/Shanghai timezone for all time displays
@@ -269,7 +269,7 @@ def read_data():
         return copy.deepcopy(_DATA_CACHE['value'])
     data = _cos_get('data.json')
     if not data:
-        return {"posts": [], "users": [], "friendRequests": [], "friendships": [], "rooms": [], "diaries": [], "messages": []}
+        return {"posts": [], "users": [], "friendRequests": [], "friendships": [], "rooms": [], "diaries": [], "messages": [], "sessions": {}, "collections": []}
     data.setdefault("posts", [])
     data.setdefault("users", [])
     data.setdefault("friendRequests", [])
@@ -292,6 +292,8 @@ def read_data():
     data.setdefault("bottles", [])
     data.setdefault("verificationRate", {})
     data.setdefault("userSync", {})
+    data.setdefault("sessions", {})
+    data.setdefault("collections", [])
     # One-time migration: reset inflated like counts to real values based on userLikes
     if not data.get("_likesMigrated", False):
         ul = data.get("userLikes", {})
@@ -495,6 +497,23 @@ def _find_user(data, kind, identifier):
         return next((u for u in data['users'] if re.sub(r'\D', '', str(u.get('phone', ''))) == target_digits), None)
     return next((u for u in data['users'] if str(u.get(kind, '')).lower() == identifier.lower()), None)
 
+def _issue_token(data, user_id):
+    token = secrets.token_urlsafe(32)
+    data.setdefault('sessions', {})[token] = {'userId': user_id, 'expires': int(time.time()) + 30 * 86400}
+    return token
+
+def _authenticated_user(headers, data):
+    normalized = {str(k).lower(): str(v) for k, v in (headers or {}).items()}
+    auth = normalized.get('authorization', '')
+    if not auth.startswith('Bearer '):
+        return ''
+    token = auth[7:].strip()
+    session = data.setdefault('sessions', {}).get(token)
+    if not session or session.get('expires', 0) < int(time.time()):
+        data.get('sessions', {}).pop(token, None)
+        return ''
+    return session.get('userId', '')
+
 def check_phone(body):
     """Check whether a phone or global email account exists."""
     kind, identifier, error = _normalize_identifier(body)
@@ -546,9 +565,11 @@ def handle_login(body):
             user['avatar'] = avatar
             user['avatarType'] = 'image'
             write_data(data)
+    token = _issue_token(data, user['id'])
+    write_data(data)
     # Don't return password hash
     safe_user = {k: v for k, v in user.items() if k != 'password'}
-    return {'success': True, 'user': safe_user}
+    return {'success': True, 'user': safe_user, 'token': token}
 
 def set_password(body):
     """Change password: requires old password verification"""
@@ -707,8 +728,9 @@ def verify_code_login(body):
     if not user:
         return {'error': '该账号未注册'}
     del data['smsCodes'][target]
+    token = _issue_token(data, user['id'])
     write_data(data)
-    return {'success': True, 'user': {k: v for k, v in user.items() if k != 'password'}}
+    return {'success': True, 'user': {k: v for k, v in user.items() if k != 'password'}, 'token': token}
 
 def get_sync(uid):
     data = read_data()
@@ -1055,13 +1077,35 @@ def delete_message(body):
         return {'error': 'Message not found'}
     if msg.get('from') != user_id:
         return {'error': 'Can only delete your own messages'}
-    # 5-minute recall limit
+    # 24-hour recall limit
     msg_time = msg.get('timestamp', 0)
-    if msg_time and int(time.time()) - msg_time > 300:
-        return {'error': 'Cannot recall messages older than 5 minutes'}
+    if msg_time and int(time.time()) - msg_time > 86400:
+        return {'error': '超过24小时的消息不可撤回'}
     data['messages'] = [m for m in data['messages'] if m.get('id') != msg_id]
     write_data(data)
     return {'success': True}
+
+def create_collection(body):
+    user_id = body.get('userId', '')
+    if not user_id:
+        return {'error': 'Missing userId'}
+    data = read_data()
+    item_type = body.get('type', 'folder')
+    if item_type == 'chat':
+        msg_id = body.get('msgId', '')
+        existing = next((item for item in data.setdefault('collections', []) if item.get('userId') == user_id and item.get('type') == 'chat' and item.get('msgId') == msg_id), None)
+        if existing:
+            return {'success': True, 'collection': existing, 'duplicate': True}
+        item = {'id': gen_id('COL'), 'userId': user_id, 'type': 'chat', 'content': str(body.get('content', ''))[:5000], 'msgId': msg_id, 'chatTarget': body.get('chatTarget', ''), 'createdAt': now_str('%Y-%m-%d %H:%M')}
+    else:
+        item = {'id': gen_id('COL'), 'userId': user_id, 'type': item_type, 'name': str(body.get('name', '未命名合集'))[:40], 'postIds': [], 'createdAt': now_str('%Y-%m-%d %H:%M')}
+    data.setdefault('collections', []).append(item)
+    write_data(data)
+    return {'success': True, 'collection': item}
+
+def get_collections(user_id):
+    data = read_data()
+    return {'collections': [item for item in data.setdefault('collections', []) if item.get('userId') == user_id]}
 
 def mark_read(body):
     """Mark all messages in a conversation as read for a user"""
@@ -2002,6 +2046,18 @@ def main_handler(event, context):
         qp = {}
     # Normalize query param keys to lowercase (Function URL trigger lowercases them)
     qp = {k.lower(): v for k, v in qp.items()}
+    public_write_paths = {
+        '/api/auth/login', '/api/auth/check-phone', '/api/auth/send-code',
+        '/api/auth/verify-code', '/api/auth/reset-password'
+    }
+    if method in ('POST', 'PUT', 'DELETE') and path not in public_write_paths:
+        auth_data = read_data()
+        auth_user = _authenticated_user(request_headers, auth_data)
+        if not auth_user:
+            return {'statusCode': 401, 'headers': cors, 'body': json.dumps({'error': 'Unauthorized'}, ensure_ascii=False)}
+        claimed_user = next((str(req.get(key, '')) for key in ('userId', 'from', 'reporterId', 'ownerId') if req.get(key)), '')
+        if claimed_user and claimed_user != auth_user:
+            return {'statusCode': 401, 'headers': cors, 'body': json.dumps({'error': 'Token does not match user'}, ensure_ascii=False)}
     try:
         if path == '/api/health':
             result = {'status': 'ok', 'time': now_str('%Y-%m-%d %H:%M:%S')}
@@ -2071,6 +2127,10 @@ def main_handler(event, context):
             result = send_message(req)
         elif path == '/api/chat/messages' and method == 'GET':
             result = get_messages(qp.get('type','room'), qp.get('target',''), int(qp.get('since','0')), qp.get('userid',''))
+        elif path == '/api/collections' and method == 'POST':
+            result = create_collection(req)
+        elif path.startswith('/api/collections/') and method == 'GET':
+            result = get_collections(path.rstrip('/').split('/')[-1])
         elif path == '/api/posts' and method == 'GET':
             result = list_posts(qp.get('viewerid', ''))
         elif path == '/api/posts' and method == 'POST':
