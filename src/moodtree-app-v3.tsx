@@ -16882,18 +16882,14 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
     [Se, ke] = p.useState(!1),
     [Oe, ue] = p.useState(""),
     [R, $] = p.useState(!1),
-    [le, fe] = p.useState(null),
     [be, w] = p.useState(null),
     [x, N] = p.useState({}),
     [_, ee] = p.useState(null),
-    [he, je] = p.useState(!1),
-    [ze, Ee] = p.useState(new Set()),
     [Pe, Ve] = p.useState(null),
     [pt, ot] = p.useState({}),
     [gt, yt] = p.useState(!1),
     [fa, we] = p.useState(!1),
     [st, Mt] = p.useState(!1),
-    zt = p.useRef(void 0),
     $e = p.useRef(null),
     jt = p.useRef([]),
     xa = p.useRef(0),
@@ -16906,7 +16902,6 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
     Dt = p.useRef(new Set()),
     [Ya, Vt] = p.useState(!1),
     [St, U] = p.useState(!1),
-    [xe, ve] = p.useState(!1),
     [Qe, Ge] = p.useState((h == null ? void 0 : h.alias) || ""),
     [Ze, Fe] = p.useState(!1),
     [me, $t] = p.useState(0),
@@ -17303,45 +17298,6 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
       const ce = z.slice(10, -11).split("|");
       return { coord: ce[0] || "", url: ce[1] || "" };
     },
-    jn = (z) => {
-      (fe(null), ki(z.content) && (Wi(z.content), d("已复制")));
-    },
-    Da = async (z) => {
-      if ((fe(null), Math.floor(Date.now() / 1e3) - (z.timestamp || 0) > 300)) {
-        d("超过5分钟的消息不可撤回");
-        return;
-      }
-      try {
-        (await pe("/api/chat/delete", { msgId: z.id, userId: r.id }), S((ce) => ce.filter((Xe) => Xe.id !== z.id)), d("已撤回"));
-      } catch {
-        d("撤回失败");
-      }
-    },
-    Mi = (z) => {
-      (fe(null), Dt.current.add(z.id), S((te) => te.filter((ce) => ce.id !== z.id)), d("已删除"));
-    },
-    wt = (z) => {
-      (fe(null), je(!0), Ee(new Set([z.id])));
-    },
-    dn = (z) => {
-      Ee((te) => {
-        const ce = new Set(te);
-        return (ce.has(z) ? ce.delete(z) : ce.add(z), ce);
-      });
-    },
-    Fa = async () => {
-      const z = Array.from(ze);
-      if (z.length === 0 || !confirm(`确定删除选中的${z.length}条消息吗？`)) return;
-      const te = C.filter((ce) => ze.has(ce.id) && ce.from === r.id);
-      for (const ce of te)
-        try {
-          await pe("/api/chat/delete", { msgId: ce.id, userId: r.id });
-        } catch {}
-      (z.forEach((ce) => Dt.current.add(ce)), S((ce) => ce.filter((Xe) => !ze.has(Xe.id))), je(!1), Ee(new Set()), d(`已删除${z.length}条消息`));
-    },
-    zi = () => {
-      (je(!1), Ee(new Set()));
-    },
     Aa = (z) => {
       var ce;
       if (Pe === z) {
@@ -17359,25 +17315,6 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
           (d("音频播放失败"), Ve(null));
         }),
         Ve(z));
-    },
-    Sn = async (z) => {
-      if ((fe(null), !!ki(z.content))) {
-        d("翻译中…");
-        try {
-          const te = z.content.replace(/\[img\].*?\[\/img\]|\[video\].*?\[\/video\]|\[audio\].*?\[\/audio\]|\[file\].*?\[\/file\]|\[location\].*?\[\/location\]|\[quote\].*?\[\/quote\]/g, "").trim();
-          if (!te) {
-            d("无可翻译内容");
-            return;
-          }
-          const ce = await Au(te);
-          ce ? N((Xe) => ({ ...Xe, [z.id]: ce.translated })) : d("翻译失败");
-        } catch {
-          d("翻译失败，请重试");
-        }
-      }
-    },
-    Wn = (z) => {
-      (fe(null), ee(z));
     },
     Fn = (z) => {
       if (wi(z)) return n.jsx("img", { src: Ci(z), alt: "图片", className: "chat-img", onClick: () => w(Ci(z)) });
@@ -17460,13 +17397,9 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
                     "div",
                     {
                       "data-msg-id": z.id,
-                      className: `chat-msg ${z.from === r.id ? "mine" : "other"} ${he ? "multi-select" : ""} ${ze.has(z.id) ? "selected" : ""}`,
-                      onClick: he ? () => dn(z.id) : void 0,
+                      className: `chat-msg ${z.from === r.id ? "mine" : "other"}`,
                       children: [
-                        he && n.jsx("div", { className: `msg-checkbox ${ze.has(z.id) ? "checked" : ""}`, children: ze.has(z.id) ? "✓" : "" }),
-
                         z.from !== r.id &&
-                          !he &&
                           n.jsx("span", {
                             onClick: y
                               ? (te) => {
@@ -17829,182 +17762,6 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
                 Se && n.jsxs("div", { className: "voice-recording-indicator", children: [n.jsx("span", { className: "voice-dot" }), "正在录音，说完后点击⏹停止"] }),
               ],
             })),
-      false && le &&
-        n.jsx("div", {
-          className: "legacy-action-disabled",
-          onClick: () => fe(null),
-          children: n.jsx("div", {
-            className: "msg-action-menu",
-            style: (() => {
-              const message = document.querySelector(`[data-msg-id="${le.id}"]`),
-                rect = message == null ? null : message.getBoundingClientRect(),
-                width = Math.min(360, window.innerWidth - 24),
-                left = rect ? Math.max(12, Math.min(rect.left + rect.width / 2 - width / 2, window.innerWidth - width - 12)) : Math.max(12, (window.innerWidth - width) / 2),
-                top = rect ? (rect.top >= 112 ? rect.top - 88 : Math.min(window.innerHeight - 96, rect.bottom + 8)) : Math.max(72, window.innerHeight / 2 - 48);
-              return { position: "fixed", width, left, top };
-            })(),
-            onClick: (z) => z.stopPropagation(),
-            children: n.jsxs("div", {
-              className: "msg-action-row",
-              children: [
-                n.jsxs("button", {
-                  className: "msg-action-item",
-                  onClick: () => jn(le),
-                  children: [
-                    n.jsx("span", {
-                      className: "msg-action-icon",
-                      children: n.jsxs("svg", {
-                        viewBox: "0 0 24 24",
-                        fill: "none",
-                        stroke: "currentColor",
-                        strokeWidth: "1.8",
-                        children: [n.jsx("rect", { x: "9", y: "9", width: "11", height: "11", rx: "2" }), n.jsx("path", { d: "M5 15V5a2 2 0 0 1 2-2h10" })],
-                      }),
-                    }),
-                    n.jsx("span", { children: "复制" }),
-                  ],
-                }),
-                n.jsxs("button", {
-                  className: "msg-action-item",
-                  onClick: () => {
-                    const msgEl = document.querySelector(`[data-msg-id="${le.id}"]`);
-                    if (msgEl) {
-                      const ta = document.createRange();
-                      let tel = null;
-                      const ch = msgEl.querySelectorAll(".chat-bubble > *,.chat-msg > div > *");
-                      let ml = 0;
-                      ch.forEach(c => { const l = (c.textContent || "").length; if (l > ml) { ml = l; tel = c; } });
-                      if (!tel) tel = msgEl.querySelector(".chat-bubble,.chat-msg") || msgEl;
-                      ta.selectNodeContents(tel);
-                      const sl = window.getSelection();
-                      sl.removeAllRanges(); sl.addRange(ta);
-                      fe("已全选");
-                    } else { fe("已全选"); }
-                  },
-                  children: [
-                    n.jsx("span", {
-                      className: "msg-action-icon",
-                      children: n.jsxs("svg", {
-                        viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8",
-                        children: [n.jsx("rect", { x: "3", y: "3", width: "18", height: "18", rx: "2" }), n.jsx("path", { d: "M7 7h10M7 11h10M7 15h6" })]
-                      }),
-                    }),
-                    n.jsx("span", { children: "全选" }),
-                  ],
-                }),
-                oa(le.content) &&
-                  n.jsxs("button", {
-                    className: "msg-action-item",
-                    onClick: () => el(le),
-                    children: [
-                      n.jsx("span", {
-                        className: "msg-action-icon",
-                        children: n.jsxs("svg", { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", children: [n.jsx("path", { d: "M4 6h12M4 12h8M4 18h12" }), n.jsx("path", { d: "M18 8l3 3-3 3" })] }),
-                      }),
-                      n.jsx("span", { children: "转文字" }),
-                    ],
-                  }),
-                le.from === r.id &&
-                  n.jsxs("button", {
-                    className: "msg-action-item",
-                    onClick: () => Da(le),
-                    children: [
-                      n.jsx("span", {
-                        className: "msg-action-icon",
-                        children: n.jsxs("svg", { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", children: [n.jsx("path", { d: "M3 12a9 9 0 1 0 3-6.7" }), n.jsx("path", { d: "M3 4v5h5" })] }),
-                      }),
-                      n.jsx("span", { children: "撤回" }),
-                    ],
-                  }),
-                le.from === r.id &&
-                  n.jsxs("button", {
-                    className: "msg-action-item",
-                    onClick: () => Mi(le),
-                    children: [
-                      n.jsx("span", {
-                        className: "msg-action-icon",
-                        children: n.jsx("svg", {
-                          viewBox: "0 0 24 24",
-                          fill: "none",
-                          stroke: "currentColor",
-                          strokeWidth: "1.8",
-                          children: n.jsx("path", { d: "M4 7h16M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13" }),
-                        }),
-                      }),
-                      n.jsx("span", { children: "删除" }),
-                    ],
-                  }),
-                n.jsxs("button", {
-                  className: "msg-action-item",
-                  onClick: () => Sn(le),
-                  children: [
-                    n.jsx("span", {
-                      className: "msg-action-icon",
-                      children: n.jsxs("svg", {
-                        viewBox: "0 0 24 24",
-                        fill: "none",
-                        stroke: "currentColor",
-                        strokeWidth: "1.8",
-                        children: [n.jsx("circle", { cx: "12", cy: "12", r: "9" }), n.jsx("path", { d: "M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" })],
-                      }),
-                    }),
-                    n.jsx("span", { children: "翻译" }),
-                  ],
-                }),
-                n.jsxs("button", {
-                  className: "msg-action-item",
-                  onClick: () => Wn(le),
-                  children: [
-                    n.jsx("span", {
-                      className: "msg-action-icon",
-                      children: n.jsxs("svg", {
-                        viewBox: "0 0 24 24",
-                        fill: "none",
-                        stroke: "currentColor",
-                        strokeWidth: "1.8",
-                        children: [n.jsx("path", { d: "M7 7h4v6H7zM13 11h4v6h-4z" }), n.jsx("path", { d: "M7 13c0 2 1 3 3 3M13 17c0 2 1 3 3 3" })],
-                      }),
-                    }),
-                    n.jsx("span", { children: "引用" }),
-                  ],
-                }),
-                n.jsxs("button", {
-                  className: "msg-action-item",
-                  onClick: () => wt(le),
-                  children: [
-                    n.jsx("span", {
-                      className: "msg-action-icon",
-                      children: n.jsxs("svg", {
-                        viewBox: "0 0 24 24",
-                        fill: "none",
-                        stroke: "currentColor",
-                        strokeWidth: "1.8",
-                        children: [
-                          n.jsx("rect", { x: "4", y: "4", width: "6", height: "6", rx: "1" }),
-                          n.jsx("rect", { x: "14", y: "4", width: "6", height: "6", rx: "1" }),
-                          n.jsx("rect", { x: "4", y: "14", width: "6", height: "6", rx: "1" }),
-                          n.jsx("path", { d: "M17 14v6M14 17h6" }),
-                        ],
-                      }),
-                    }),
-                    n.jsx("span", { children: "多选" }),
-                  ],
-                }),
-              ],
-            }),
-          }),
-        }),
-      he &&
-        n.jsxs("div", {
-          className: "multi-select-bar",
-          children: [
-            n.jsxs("span", { className: "multi-select-count", children: ["已选", ze.size, "项"] }),
-            n.jsxs("div", {
-              className: "multi-select-actions",
-              children: [n.jsx("button", { className: "multi-select-btn cancel", onClick: zi, children: "取消" }), n.jsx("button", { className: "multi-select-btn delete", onClick: Fa, disabled: ze.size === 0, children: "删除" })],
-            }),
-          ],
-        }),
       _ &&
         n.jsxs("div", {
           className: "quote-preview",
