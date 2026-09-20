@@ -17475,7 +17475,7 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
               : C.map((z, msgIndex) => {
                   const previous = C[msgIndex - 1], separated = !previous || (z.timestamp || 0) - (previous.timestamp || 0) > 300, showAvatar = z.from !== r.id && (!previous || previous.from !== z.from || separated);
                   return n.jsxs(n.Fragment, { children: [
-                    separated && n.jsx("div", { className: "chat-time-divider", children: z.time.slice(11) }),
+                    separated && n.jsx("div", { className: "chat-time-divider", children: (() => { const d = z.timestamp ? new Date(z.timestamp * 1000) : new Date(z.time); if (isNaN(d.getTime())) return z.time.slice(11); const hm = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; const mid = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime(); const dd = Math.floor((mid(new Date()) - mid(d)) / 864e5); return dd <= 0 ? hm : dd === 1 ? `昨天 ${hm}` : dd < 7 ? `周${"日一二三四五六"[d.getDay()]} ${hm}` : `${d.getMonth() + 1}月${d.getDate()}日 ${hm}`; })() }),
                     n.jsxs("div", {
                       "data-msg-id": z.id,
                       className: `chat-msg ${z.from === r.id ? "mine" : "other"} ${previous && previous.from === z.from && !separated ? "chat-msg-grouped" : ""}`,
@@ -17496,6 +17496,7 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
                             Fn(z.content),
                             pt[z.id] && n.jsxs("div", { className: "chat-voice-text", children: ["📝 ", pt[z.id]] }),
                             x[z.id] && n.jsxs("div", { className: "chat-translated", children: [x[z.id]] }),
+                            
                             u === "dm" && z.from === r.id && Te.getItem("moodtree-read-receipts") !== "off" && n.jsx("span", { className: "chat-read-status", children: me >= (z.timestamp || 0) ? "已读" : "未读" }),
                           ],
                         }),
@@ -18720,6 +18721,29 @@ function e0({ posts: r, openPost: u, user: o, onSignOut: c, onEditProfile: m, on
     [An, Ma] = p.useState(null),
     [ma, Ti] = p.useState(() => Te.getItem("mt-hide-violations") === "true"),
     [Ll, Jn] = p.useState(""),
+    [bdManual, setBdManual] = p.useState(!1),
+    [bpOpen, setBpOpen] = p.useState(!1),
+    [bpY, setBpY] = p.useState(2e3),
+    [bpM, setBpM] = p.useState(1),
+    [bpD, setBpD] = p.useState(1),
+    bdWheelY = p.useRef(null), bdWheelM = p.useRef(null), bdWheelD = p.useRef(null),
+    bpOpenAt = () => {
+      const parts = Ll.split("-");
+      const yy = /^\d{4}$/.test(parts[0] || "") ? +parts[0] : 2e3;
+      const mm = /^(0?[1-9]|1[0-2])$/.test(parts[1] || "") ? +parts[1] : 1;
+      const dd = /^(0?[1-9]|[12]\d|3[01])$/.test(parts[2] || "") ? +parts[2] : 1;
+      (setBpY(yy), setBpM(mm), setBpD(dd), setBpOpen(!0));
+      setTimeout(() => {
+        bdWheelY.current && (bdWheelY.current.scrollTop = (yy - 1930) * 44);
+        bdWheelM.current && (bdWheelM.current.scrollTop = (mm - 1) * 44);
+        bdWheelD.current && (bdWheelD.current.scrollTop = (dd - 1) * 44);
+      }, 60);
+    },
+    bpConfirm = () => {
+      const last = new Date(bpY, bpM, 0).getDate(), dd = Math.min(bpD, last);
+      const norm = `${bpY}-${String(bpM).padStart(2, "0")}-${String(dd).padStart(2, "0")}`;
+      (Jn(norm), setBpOpen(!1), setBdManual(!1), pe("/api/user/profile", { userId: o.id, birthday: norm }).then(() => h("生日已保存，届时会有惊喜 🎂")).catch(() => h("保存失败")));
+    },
     [ki, un] = p.useState(!1),
     [tl, ua] = p.useState(""),
     [Ot, yn] = p.useState(""),
@@ -19546,31 +19570,53 @@ function e0({ posts: r, openPost: u, user: o, onSignOut: c, onEditProfile: m, on
                                 n.jsxs("span", { children: [n.jsx("b", { children: "🎂 我的生日" }), n.jsx("small", { children: "生日当天会收到专属祝福" })] }),
                                 n.jsxs("div", {
                                   className: "birthday-segments birthday-input",
+                                  onClick: () => { !bdManual && bpOpenAt(); },
                                   onBlur: (g) => {
                                     if (g.currentTarget.contains(g.relatedTarget)) return;
-                                    /^\d{4}-\d{2}-\d{2}$/.test(Ll) && pe("/api/user/profile", { userId: o.id, birthday: Ll }).then(() => h("生日已保存，届时会有惊喜 🎂")).catch(() => h("保存失败"));
+                                    const parts = Ll.split("-"), mm = parts[1] || "", dd = parts[2] || "";
+                                    if (/^\d{4}$/.test(parts[0] || "") && /^(0?[1-9]|1[0-2])$/.test(mm) && /^(0?[1-9]|[12]\d|3[01])$/.test(dd)) {
+                                      const norm = `${parts[0]}-${mm.padStart(2, "0")}-${dd.padStart(2, "0")}`;
+                                      (Jn(norm), setBdManual(!1), pe("/api/user/profile", { userId: o.id, birthday: norm }).then(() => h("生日已保存，届时会有惊喜 🎂")).catch(() => h("保存失败")));
+                                    }
                                   },
                                   children: [
                                     n.jsx("input", {
-                                      ref: birthdayYearRef, inputMode: "numeric", maxLength: 4, placeholder: "年", value: (Ll.split("-")[0] || "").slice(0, 4),
+                                      ref: birthdayYearRef, inputMode: "numeric", maxLength: 4, readOnly: !bdManual, placeholder: "年", value: (Ll.split("-")[0] || "").slice(0, 4),
                                       onChange: (g) => { const value = g.target.value.replace(/\D/g, "").slice(0, 4), parts = Ll.split("-"); Jn(`${value}-${parts[1] || ""}-${parts[2] || ""}`); value.length === 4 && birthdayMonthRef.current && birthdayMonthRef.current.focus(); },
                                       onPaste: (g) => { const digits = g.clipboardData.getData("text").replace(/\D/g, "").slice(0, 8); if (digits.length >= 6) { g.preventDefault(); Jn(`${digits.slice(0, 4)}-${digits.slice(4, 6)}-${digits.slice(6, 8)}`); birthdayDayRef.current && birthdayDayRef.current.focus(); } },
                                     }),
                                     n.jsx("span", { children: "-" }),
                                     n.jsx("input", {
-                                      ref: birthdayMonthRef, inputMode: "numeric", maxLength: 2, placeholder: "月", value: (Ll.split("-")[1] || "").slice(0, 2),
+                                      ref: birthdayMonthRef, inputMode: "numeric", maxLength: 2, readOnly: !bdManual, placeholder: "月", value: (Ll.split("-")[1] || "").slice(0, 2),
                                       onChange: (g) => { const value = g.target.value.replace(/\D/g, "").slice(0, 2), parts = Ll.split("-"); Jn(`${parts[0] || ""}-${value}-${parts[2] || ""}`); value.length === 2 && birthdayDayRef.current && birthdayDayRef.current.focus(); },
                                       onKeyDown: (g) => { g.key === "Backspace" && !g.currentTarget.value && birthdayYearRef.current && birthdayYearRef.current.focus(); },
                                     }),
                                     n.jsx("span", { children: "-" }),
                                     n.jsx("input", {
-                                      ref: birthdayDayRef, inputMode: "numeric", maxLength: 2, placeholder: "日", value: (Ll.split("-")[2] || "").slice(0, 2),
+                                      ref: birthdayDayRef, inputMode: "numeric", maxLength: 2, readOnly: !bdManual, placeholder: "日", value: (Ll.split("-")[2] || "").slice(0, 2),
                                       onChange: (g) => { const value = g.target.value.replace(/\D/g, "").slice(0, 2), parts = Ll.split("-"); Jn(`${parts[0] || ""}-${parts[1] || ""}-${value}`); },
                                       onKeyDown: (g) => { g.key === "Backspace" && !g.currentTarget.value && birthdayMonthRef.current && birthdayMonthRef.current.focus(); },
                                     }),
                                   ],
                                 }),
                               ],
+                            }),
+                            bpOpen && n.jsx("div", {
+                              className: "bd-picker-mask",
+                              onClick: () => setBpOpen(!1),
+                              children: n.jsxs("div", {
+                                className: "bd-picker",
+                                onClick: (g) => g.stopPropagation(),
+                                children: [
+                                  n.jsxs("div", { className: "bd-picker-head", children: [n.jsx("button", { className: "bd-picker-cancel", onClick: () => setBpOpen(!1), children: "取消" }), n.jsx("span", { className: "bd-picker-title", children: "选择生日" }), n.jsx("button", { className: "bd-picker-ok", onClick: bpConfirm, children: "确定" })] }),
+                                  n.jsxs("div", { className: "bd-picker-body", children: [
+                                    n.jsx("div", { className: "bd-wheel", ref: bdWheelY, onScroll: (g) => { clearTimeout(g.currentTarget._t); g.currentTarget._t = setTimeout(() => setBpY(1930 + Math.min(96, Math.max(0, Math.round(g.currentTarget.scrollTop / 44)))), 120); }, children: [n.jsx("div", { className: "bd-wheel-pad" }), ...Array.from({ length: 97 }, (g, i) => 1930 + i).map((v, i) => n.jsx("div", { className: `bd-item ${v === bpY ? "on" : ""}`, onClick: () => { bdWheelY.current && (bdWheelY.current.scrollTo({ top: i * 44, behavior: "smooth" }), setBpY(v)); }, children: v }, v)), n.jsx("div", { className: "bd-wheel-pad" })] }),
+                                    n.jsx("div", { className: "bd-wheel", ref: bdWheelM, onScroll: (g) => { clearTimeout(g.currentTarget._t); g.currentTarget._t = setTimeout(() => setBpM(1 + Math.min(11, Math.max(0, Math.round(g.currentTarget.scrollTop / 44)))), 120); }, children: [n.jsx("div", { className: "bd-wheel-pad" }), ...Array.from({ length: 12 }, (g, i) => 1 + i).map((v, i) => n.jsx("div", { className: `bd-item ${v === bpM ? "on" : ""}`, onClick: () => { bdWheelM.current && (bdWheelM.current.scrollTo({ top: i * 44, behavior: "smooth" }), setBpM(v)); }, children: v }, v)), n.jsx("div", { className: "bd-wheel-pad" })] }),
+                                    n.jsx("div", { className: "bd-wheel", ref: bdWheelD, onScroll: (g) => { clearTimeout(g.currentTarget._t); g.currentTarget._t = setTimeout(() => setBpD(1 + Math.min(30, Math.max(0, Math.round(g.currentTarget.scrollTop / 44)))), 120); }, children: [n.jsx("div", { className: "bd-wheel-pad" }), ...Array.from({ length: 31 }, (g, i) => 1 + i).map((v, i) => n.jsx("div", { className: `bd-item ${v === bpD ? "on" : ""}`, onClick: () => { bdWheelD.current && (bdWheelD.current.scrollTo({ top: i * 44, behavior: "smooth" }), setBpD(v)); }, children: v }, v)), n.jsx("div", { className: "bd-wheel-pad" })] }),
+                                  ] }),
+                                  n.jsx("button", { className: "bd-picker-manual", onClick: () => { (setBpOpen(!1), setBdManual(!0)); setTimeout(() => { birthdayYearRef.current && birthdayYearRef.current.focus(); }, 80); }, children: "✍️ 手动输入日期" }),
+                                ],
+                              }),
                             }),
                             n.jsxs("label", {
                               children: [
