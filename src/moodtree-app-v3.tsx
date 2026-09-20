@@ -17314,7 +17314,7 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
       const ce = z.slice(10, -11).split("|");
       return { coord: ce[0] || "", url: ce[1] || "" };
     },
-    openMessageMenu = (z) => setActionMsg(z),
+    openMessageMenu = (z) => { try { const _sel = window.getSelection(); _sel && _sel.removeAllRanges(); } catch {} setActionMsg(z); },
     startMessagePress = (z) => {
       longPressRef.current = window.setTimeout(() => {
         const te = window.getSelection();
@@ -17475,7 +17475,7 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
               : C.map((z, msgIndex) => {
                   const previous = C[msgIndex - 1], separated = !previous || (z.timestamp || 0) - (previous.timestamp || 0) > 300, showAvatar = z.from !== r.id && (!previous || previous.from !== z.from || separated);
                   return n.jsxs(n.Fragment, { children: [
-                    separated && n.jsx("div", { className: "chat-time-divider", children: z.time }),
+                    separated && n.jsx("div", { className: "chat-time-divider", children: z.time.slice(11) }),
                     n.jsxs("div", {
                       "data-msg-id": z.id,
                       className: `chat-msg ${z.from === r.id ? "mine" : "other"} ${previous && previous.from === z.from && !separated ? "chat-msg-grouped" : ""}`,
@@ -17496,7 +17496,6 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
                             Fn(z.content),
                             pt[z.id] && n.jsxs("div", { className: "chat-voice-text", children: ["📝 ", pt[z.id]] }),
                             x[z.id] && n.jsxs("div", { className: "chat-translated", children: [x[z.id]] }),
-                            n.jsx("span", { className: "chat-time", children: z.time.slice(11) }),
                             u === "dm" && z.from === r.id && Te.getItem("moodtree-read-receipts") !== "off" && n.jsx("span", { className: "chat-read-status", children: me >= (z.timestamp || 0) ? "已读" : "未读" }),
                           ],
                         }),
@@ -17521,7 +17520,7 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
       multiSelect && n.jsxs("div", { className: "multi-select-bar", children: [n.jsxs("span", { children: ["已选 ", selectedMessages.size, " 条"] }), n.jsxs("div", { children: [n.jsx("button", { onClick: () => { setMultiSelect(!1); setSelectedMessages(new Set()); }, children: "取消" }), n.jsx("button", { disabled: selectedMessages.size === 0, onClick: deleteSelectedMessages, children: "删除自己的消息" })] })] }),
       n.jsx("style", {
         children:
-          ".emoji-picker{display:grid;grid-template-columns:repeat(10,1fr);gap:2px;padding:8px;background:#f8f6f2;border-top:1px solid #e8e4dc;max-height:200px;overflow-y:auto}.emoji-picker button{width:32px;height:32px;border:none;background:none;font-size:20px;cursor:pointer;border-radius:6px;display:flex;align-items:center;justify-content:center;transition:all 0.15s}.emoji-picker button:hover{background:var(--sage-soft,#e8f0ea);transform:scale(1.2)}",
+          "@media (hover:none) and (pointer:coarse){.chat-messages,.chat-messages *{user-select:none!important;-webkit-user-select:none!important;-webkit-touch-callout:none!important}}.emoji-picker{display:grid;grid-template-columns:repeat(10,1fr);gap:2px;padding:8px;background:#f8f6f2;border-top:1px solid #e8e4dc;max-height:200px;overflow-y:auto}.emoji-picker button{width:32px;height:32px;border:none;background:none;font-size:20px;cursor:pointer;border-radius:6px;display:flex;align-items:center;justify-content:center;transition:all 0.15s}.emoji-picker button:hover{background:var(--sage-soft,#e8f0ea);transform:scale(1.2)}",
       }),
       J && n.jsx("div", { className: "emoji-picker", children: Wv.map((z) => n.jsx("button", { onClick: () => H(T + z), type: "button", children: z }, z)) }),
       n.jsxs("div", {
