@@ -1,3 +1,25 @@
+import AI_AVATAR_96 from "../ai-avatar-96.png";
+import PET_01 from "../pets-256/01-橘猫.webp";
+import PET_02 from "../pets-256/02-柴犬.webp";
+import PET_03 from "../pets-256/03-白兔.webp";
+import PET_04 from "../pets-256/04-熊猫.webp";
+import PET_05 from "../pets-256/05-企鹅.webp";
+import PET_06 from "../pets-256/06-水豚.webp";
+import PET_07 from "../pets-256/07-小鸡.webp";
+import PET_08 from "../pets-256/08-仓鼠.webp";
+import PET_09 from "../pets-256/09-小狐狸.webp";
+import PET_10 from "../pets-256/10-小熊.webp";
+import PET_11 from "../pets-256/11-小青蛙.webp";
+import PET_12 from "../pets-256/12-小刺猬.webp";
+import PET_13 from "../pets-256/13-树懒.webp";
+import PET_14 from "../pets-256/14-小海豹.webp";
+import PET_15 from "../pets-256/15-小猪.webp";
+import PET_16 from "../pets-256/16-羊驼.webp";
+import PET_17 from "../pets-256/17-小恐龙.webp";
+import PET_18 from "../pets-256/18-独角兽.webp";
+import PET_19 from "../pets-256/19-小鹿.webp";
+import PET_20 from "../pets-256/20-树精灵.webp";
+
 (function () {
   const u = document.createElement("link").relList;
   if (u && u.supports && u.supports("modulepreload")) return;
@@ -11737,6 +11759,49 @@ function Ov({ color: r, onChange: u }) {
     ],
   });
 }
+const USE_PET_MOCK = false,
+  PET_CATALOG = [
+    ["01","橘猫",PET_01],["02","柴犬",PET_02],["03","白兔",PET_03],["04","熊猫",PET_04],["05","企鹅",PET_05],
+    ["06","水豚",PET_06],["07","小鸡",PET_07],["08","仓鼠",PET_08],["09","小狐狸",PET_09],["10","小熊",PET_10],
+    ["11","小青蛙",PET_11],["12","小刺猬",PET_12],["13","树懒",PET_13],["14","小海豹",PET_14],["15","小猪",PET_15],
+    ["16","羊驼",PET_16],["17","小恐龙",PET_17],["18","独角兽",PET_18],["19","小鹿",PET_19],["20","树精灵",PET_20],
+  ].map(([type,name,image])=>({type,name,image})),
+  PET_LEVELS=[{level:1,name:"种子",min:0,next:3},{level:2,name:"发芽",min:3,next:7},{level:3,name:"树苗",min:7,next:14},{level:4,name:"小树",min:14,next:30},{level:5,name:"参天树灵",min:30,next:30}],
+  petLevel=exp=>[...PET_LEVELS].reverse().find(x=>exp>=x.min)||PET_LEVELS[0];
+
+function PetPage({user:r,onBack:u,flash:c}) {
+  const [view,setView]=p.useState("loading"),[pet,setPet]=p.useState(null),[error,setError]=p.useState(""),
+    [picked,setPicked]=p.useState(null),[name,setName]=p.useState(""),[busy,setBusy]=p.useState(!1),
+    [moodOpen,setMoodOpen]=p.useState(!1),[upgrade,setUpgrade]=p.useState(null),[bounce,setBounce]=p.useState(!1),
+    [broken,setBroken]=p.useState(new Set()),key=`moodtree-pet-mock-${r.id}`,
+    readMock=()=>{try{const x=JSON.parse(Te.getItem(key)||"null");if(x)return {...x,today_fed:x.fed_date===new Date().toISOString().slice(0,10)}}catch{}return null},
+    writeMock=x=>(Te.setItem(key,JSON.stringify(x)),x),
+    load=async()=>{setView("loading");setError("");try{const x=USE_PET_MOCK?(readMock()||{exists:!1}):await qe("/api/pets/get");if(x.error)throw Error(x.error);x.exists===!1?(setPet(null),setView("choose")):(setPet(x),setView("home"))}catch(x){setError(x.message||"宠物暂时走丢了");setView("error")}};
+  p.useEffect(()=>{load()},[r.id]);
+  const create=async()=>{
+      if(busy||!picked)return;const raw=Array.from(name.trim()).slice(0,8).join("");if(!raw)return c("给小伙伴取个名字吧");const clean=/[A-Za-z0-9\u3400-\u9fff]/.test(raw)?raw:picked.name;
+      setBusy(!0);try{let x;if(USE_PET_MOCK){if(readMock())throw Error("已拥有宠物");const demoExp=new URLSearchParams(location.search).get("petUpgradeDemo")==="1"?2:0,lv=petLevel(demoExp);x=writeMock({exists:!0,pet_type:picked.type,pet_name:clean,exp:demoExp,level:lv.level,level_name:lv.name,streak:0,today_fed:!1,last_mood:""})}else x=await pe("/api/pets/create",{pet_type:picked.type,pet_name:clean});
+        if(x.error||x.ok===!1)throw Error(x.error||"创建失败");setPet({...x,exists:!0});setView("home");setPicked(null);c(`${clean}来陪你啦`)
+      }catch(x){c(x.message||"创建失败，请重试")}setBusy(!1)
+    },
+    feed=async mood=>{
+      if(busy||pet.today_fed)return;setBusy(!0);try{let x;if(USE_PET_MOCK){const old=readMock()||pet,oldLv=petLevel(old.exp||0),exp=(old.exp||0)+1,lv=petLevel(exp);x=writeMock({...old,exists:!0,exp,level:lv.level,level_name:lv.name,streak:(old.streak||0)+1,today_fed:!0,fed_date:new Date().toISOString().slice(0,10),last_mood:mood,leveled_up:lv.level>oldLv.level})}else x=await pe("/api/pets/feed",{mood});
+        if(x.error||x.ok===!1)throw Error(x.error||"记录失败");const next={...pet,...x,today_fed:!0,last_mood:mood};setPet(next);setMoodOpen(!1);
+        if(x.leveled_up&&!sessionStorage.getItem(`pet-up-${r.id}-${next.level}`)){sessionStorage.setItem(`pet-up-${r.id}-${next.level}`,"1");setUpgrade(next)}c("今天的心情已经浇灌给树灵啦")
+      }catch(x){c(x.message||"记录失败，请重试")}setBusy(!1)
+    },
+    picture=(x,large=!1)=>broken.has(x.type)?n.jsx("div",{className:`pet-image-fallback ${large?"large":""}`,children:"🌱"}):n.jsx("img",{src:x.image,alt:x.name,onError:()=>setBroken(s=>new Set(s).add(x.type))});
+  if(view==="loading")return n.jsxs("div",{className:"pet-page pet-center",children:[n.jsx("div",{className:"pet-loader"}),n.jsx("p",{children:"正在寻找你的小伙伴…"})]});
+  if(view==="error")return n.jsxs("div",{className:"pet-page pet-center",children:[n.jsx("div",{className:"pet-empty-icon",children:"🌱"}),n.jsx("p",{children:error}),n.jsx("button",{className:"pet-primary",onClick:load,children:"重新试试"}),n.jsx("button",{className:"pet-link",onClick:u,children:"返回"})]});
+  const header=n.jsxs("header",{className:"pet-header",children:[n.jsx("button",{onClick:u,"aria-label":"返回",children:"←"}),n.jsxs("div",{children:[n.jsx("h2",{children:view==="choose"?"选择你的小树灵":"我的宠物"}),n.jsx("p",{children:view==="choose"?"它会陪着每一次心情慢慢长大":"记录心情，就是给陪伴浇水"})]})]});
+  if(view==="choose")return n.jsxs("div",{className:"pet-page",children:[header,n.jsx("div",{className:"pet-grid",children:PET_CATALOG.map(x=>n.jsxs("button",{className:"pet-choice",onClick:()=>{setPicked(x);setName(x.name)},children:[picture(x),n.jsx("span",{children:x.name})]},x.type))}),picked&&n.jsx("div",{className:"pet-modal-mask",onClick:e=>e.target===e.currentTarget&&!busy&&setPicked(null),children:n.jsxs("div",{className:"pet-modal",children:[picture(picked,!0),n.jsx("h3",{children:"给它取个名字"}),n.jsx("input",{value:name,maxLength:8,onChange:e=>setName(Array.from(e.target.value).slice(0,8).join("")),placeholder:picked.name,autoFocus:!0}),n.jsxs("small",{children:[Array.from(name).length,"/8"]}),n.jsxs("div",{className:"pet-modal-actions",children:[n.jsx("button",{className:"pet-secondary",disabled:busy,onClick:()=>setPicked(null),children:"再看看"}),n.jsx("button",{className:"pet-primary",disabled:busy||!name.trim(),onClick:create,children:busy?"正在迎接…":"确认选择"})]})]})})]});
+  const catalog=PET_CATALOG.find(x=>x.type===pet.pet_type)||PET_CATALOG[19],lv=petLevel(Number(pet.exp)||0),max=lv.level===5,ratio=max?1:Math.max(0,Math.min(1,((pet.exp||0)-lv.min)/(lv.next-lv.min))),within=max?`${pet.exp}/∞`:`${(pet.exp||0)-lv.min}/${lv.next-lv.min}`,
+    words=!pet.today_fed?`${pet.pet_name}在等你回来记录今天的心情`:pet.last_mood==="happy"?`${pet.pet_name}今天元气满满地晃来晃去`:pet.last_mood==="sad"?`${pet.pet_name}依偎过来轻轻蹭蹭你`:`${pet.pet_name}安静地陪在你身边`;
+  return n.jsxs("div",{className:"pet-page pet-home",children:[header,n.jsx("button",{className:`pet-hero ${bounce?"bounce":""}`,onClick:()=>{setBounce(!0);setTimeout(()=>setBounce(!1),520)},children:picture(catalog,!0)}),n.jsx("h1",{children:pet.pet_name}),n.jsxs("div",{className:"pet-level-line",children:[n.jsx("b",{children:`Lv${lv.level} ${pet.level_name||lv.name}`}),n.jsx("span",{children:within})]}),n.jsx("div",{className:"pet-progress",children:n.jsx("i",{style:{transform:`scaleX(${ratio})`}})}),n.jsxs("div",{className:"pet-streak",children:["☀ ",n.jsxs("b",{children:["已连续陪伴 ",pet.streak||0," 天"]})]}),n.jsx("p",{className:"pet-status",children:words}),n.jsx("button",{className:`pet-feed ${pet.today_fed?"done":""}`,disabled:pet.today_fed||busy,onClick:()=>setMoodOpen(!0),children:pet.today_fed?"今天已经喂过啦 ✓":busy?"正在记录…":"记录今日心情"}),
+    moodOpen&&n.jsx("div",{className:"pet-modal-mask",onClick:e=>e.target===e.currentTarget&&!busy&&setMoodOpen(!1),children:n.jsxs("div",{className:"pet-modal pet-mood-modal",children:[n.jsx("h3",{children:"今天是什么心情？"}),n.jsx("p",{children:"选一个最接近的就好"}),n.jsx("div",{className:"pet-mood-grid",children:[["happy","开心","☀"],["calm","平静","◌"],["sad","难过","☂"],["tired","疲惫","☁"]].map(([v,l,i])=>n.jsxs("button",{disabled:busy,onClick:()=>feed(v),children:[n.jsx("span",{children:i}),l]},v))}),n.jsx("button",{className:"pet-link",disabled:busy,onClick:()=>setMoodOpen(!1),children:"稍后再说"})]})}),
+    upgrade&&n.jsx("div",{className:"pet-upgrade-mask",onClick:()=>setUpgrade(null),children:n.jsxs("div",{className:"pet-upgrade",children:[n.jsx("span",{children:"✨"}),n.jsxs("h2",{children:[upgrade.pet_name,"升级啦！"]}),n.jsxs("p",{children:["Lv",upgrade.level," ",upgrade.level_name]}),n.jsx("button",{className:"pet-primary",onClick:()=>setUpgrade(null),children:"继续陪伴"})]})})]});
+}
+
 function Uv() {
   const [r, u] = p.useState("home"),
     [o, c] = p.useState([]),
@@ -12176,6 +12241,7 @@ function Uv() {
                 n.jsx("button", { className: r === "chat" ? "active" : "", onClick: () => ve("chat"), children: "聊天" }),
                 n.jsx("button", { className: r === "publish" ? "active" : "", onClick: () => ve("publish"), children: "写一写" }),
                 n.jsx("button", { className: r === "rooms" ? "active" : "", onClick: () => ve("rooms"), children: "房间" }),
+                n.jsx("button", { className: r === "pet" ? "active" : "", onClick: () => ve("pet"), children: "我的宠物" }),
                 n.jsx("button", { className: r === "mine" ? "active" : "", onClick: () => ve("mine"), children: "我的" }),
               ],
             }),
@@ -12270,6 +12336,7 @@ function Uv() {
           r === "detail" &&
             ha &&
             n.jsx(Gv, { post: ha, onBack: () => U("home"), react: $t, update: (M) => c((Q) => Q.map((oe) => (oe.id === M.id ? M : oe))), user: k, onStartDM: O, flash: me, onRequireLogin: () => D(!0), onAvatarClick: Pe, onShare: gt, onTextMenu: It }),
+          r === "pet" && k && n.jsx(PetPage, { user: k, onBack: () => U("home"), flash: me }),
           r === "mine" &&
             k &&
             n.jsx(e0, {
@@ -12319,6 +12386,7 @@ function Uv() {
           }),
           n.jsxs("button", { className: "write-btn", onClick: () => ve("publish"), children: [n.jsx(Rl, { children: "＋" }), n.jsx("span", { children: "写" })] }),
           n.jsxs("button", { className: r === "rooms" ? "active" : "", onClick: () => ve("rooms"), children: [n.jsx(Rl, { children: "◇" }), n.jsx("span", { children: "房间" })] }),
+          n.jsxs("button", { className: r === "pet" ? "active" : "", onClick: () => ve("pet"), children: [n.jsx(Rl, { children: "♧" }), n.jsx("span", { children: "宠物" })] }),
           n.jsxs("button", { className: r === "mine" ? "active" : "", onClick: () => ve("mine"), children: [n.jsx(Rl, { children: "◎" }), n.jsx("span", { children: "我的" })] }),
         ],
       }),
@@ -14272,7 +14340,7 @@ function Gv({ post: r, onBack: u, react: o, update: c, user: m, onStartDM: d, fl
                 children:
                   ".ai-chat-messages{max-height:400px;overflow-y:auto;padding:12px 16px;display:flex;flex-direction:column;gap:10px}.ai-msg{display:flex;align-items:flex-start;gap:8px;max-width:85%}.ai-msg-user{align-self:flex-end;flex-direction:row-reverse}.ai-msg-avatar{font-size:20px;flex-shrink:0}.ai-msg-text{padding:8px 14px;border-radius:14px;font-size:14px;line-height:1.6;word-break:break-word}.ai-msg-user .ai-msg-text{background:var(--sage-dark,#6f917d);color:#fff;border-bottom-right-radius:4px}.ai-msg-ai .ai-msg-text{background:var(--sage-soft,#e8f0ea);color:#333;border-bottom-left-radius:4px}.ai-typing{color:#999;font-style:italic}",
               }),
-              n.jsxs("div", { className: "ai-chat-head", children: [n.jsx("div", { className: "ai-avatar", children: "🤖" }), n.jsxs("div", { children: [n.jsx("h2", { children: "AI 陪伴" }), n.jsx("small", { children: "你的专属AI倾听者" })] })] }),
+              n.jsxs("div", { className: "ai-chat-head", children: [n.jsx("div", { className: "ai-avatar", children: n.jsx("img", { src: AI_AVATAR_96, alt: "MoodTree AI" }) }), n.jsxs("div", { children: [n.jsx("h2", { children: "AI 陪伴" }), n.jsx("small", { children: "你的专属AI倾听者" })] })] }),
               n.jsxs("div", {
                 className: "ai-chat-messages",
                 children: [
@@ -14907,7 +14975,10 @@ function Qv({ user: r, onStartDM: u, onOpenRoom: o, flash: c, onUnreadUpdate: m,
               const je = he.messages || [];
               if (je.length > 0) {
                 const ze = je[je.length - 1];
-                C((Ee) => ({ ...Ee, [_.id]: { content: ze.content, time: ze.time } }));
+                C((Ee) => {
+                  const next = { content: ze.content, time: ze.time };
+                  return Ee[_.id] && Ee[_.id].content === next.content && Ee[_.id].time === next.time ? Ee : { ...Ee, [_.id]: next };
+                });
               }
             })
             .catch(() => {});
@@ -14918,7 +14989,10 @@ function Qv({ user: r, onStartDM: u, onOpenRoom: o, flash: c, onUnreadUpdate: m,
                 const he = ee.messages || [];
                 if (he.length > 0) {
                   const je = he[he.length - 1];
-                  k((ze) => ({ ...ze, [_.id]: { content: je.content, time: je.time } }));
+                  k((ze) => {
+                    const next = { content: je.content, time: je.time };
+                    return ze[_.id] && ze[_.id].content === next.content && ze[_.id].time === next.time ? ze : { ...ze, [_.id]: next };
+                  });
                 }
               })
               .catch(() => {});
@@ -14926,12 +15000,12 @@ function Qv({ user: r, onStartDM: u, onOpenRoom: o, flash: c, onUnreadUpdate: m,
           qe(`/api/chat/unread?userId=${r.id}`)
             .then((_) => {
               const ee = { dm: _.dm || {}, rooms: _.rooms || {} };
-              (J(ee), m && m(_.total || 0));
+              (J((old) => JSON.stringify(old) === JSON.stringify(ee) ? old : ee), m && m(_.total || 0));
             })
             .catch(() => {}));
       };
       x();
-      const N = setInterval(x, 5e3);
+      const N = setInterval(x, 1e4);
       return () => clearInterval(N);
     }, [v, S, r.id]));
   const be = (x) => {
@@ -14940,10 +15014,10 @@ function Qv({ user: r, onStartDM: u, onOpenRoom: o, flash: c, onUnreadUpdate: m,
         _ = new Date();
       return N.toDateString() === _.toDateString() ? N.toTimeString().slice(0, 5) : `${N.getMonth() + 1}/${N.getDate()}`;
     },
-    w = [...v].sort((x, N) => {
+    w = p.useMemo(() => [...v].sort((x, N) => {
       const _ = Z.includes(x.id) ? 1 : 0;
       return (Z.includes(N.id) ? 1 : 0) - _;
-    });
+    }), [v, Z]);
   return n.jsxs("div", {
     className: "page-wrap chat-page-wrap",
     children: [
@@ -15143,6 +15217,12 @@ function Qv({ user: r, onStartDM: u, onOpenRoom: o, flash: c, onUnreadUpdate: m,
     ],
   });
 }
+function AiUserAvatar({ user: r }) {
+  const [failed, setFailed] = p.useState(!1);
+  if (r && r.avatarType === "image" && r.avatar && !failed)
+    return n.jsx("img", { src: r.avatar, alt: "我的头像", onError: () => setFailed(!0) });
+  return n.jsx("span", { children: r && r.avatarType !== "image" && r.avatar ? r.avatar : "🌿" });
+}
 function Iv({ user: r, onBack: u, flash: o }) {
   const [c, m] = p.useState([{ role: "ai", text: "你好，我在这里。有什么想说的，都可以告诉我。不管是什么心情，我都会认真听。" }]),
     [d, h] = p.useState(""),
@@ -15202,7 +15282,7 @@ function Iv({ user: r, onBack: u, flash: o }) {
       n.jsx("div", { className: "ai-page-top-back", children: n.jsx("button", { className: "back-button", onClick: u, children: "←" }) }),
       n.jsxs("div", {
         className: "ai-page-header",
-        children: [n.jsx("div", { style: { fontSize: "28px" }, children: "🤖" }), n.jsxs("div", { children: [n.jsx("h2", { children: "AI 陪伴" }), n.jsx("small", { children: "温暖倾听 · 永远在你身边" })] })],
+        children: [n.jsx("img", { src: AI_AVATAR_96, alt: "MoodTree AI", className: "ai-page-header-avatar" }), n.jsxs("div", { children: [n.jsx("h2", { children: "AI 陪伴" }), n.jsx("small", { children: "温暖倾听 · 永远在你身边" })] })],
       }),
       n.jsx("div", { className: "ai-page-header-divider" }),
       n.jsxs("div", {
@@ -15213,12 +15293,12 @@ function Iv({ user: r, onBack: u, flash: o }) {
               "div",
               {
                 className: `ai-page-msg ${T.role === "user" ? "ai-page-msg-user" : "ai-page-msg-ai"}`,
-                children: [n.jsx("div", { className: "ai-page-msg-avatar", children: T.role === "ai" ? "🤖" : "🌿" }), n.jsx("div", { className: "ai-page-msg-text", children: T.text })],
+                children: [n.jsx("div", { className: "ai-page-msg-avatar", children: T.role === "ai" ? n.jsx("img", { src: AI_AVATAR_96, alt: "MoodTree AI" }) : n.jsx(AiUserAvatar, { user: r }) }), n.jsx("div", { className: "ai-page-msg-text", children: T.text })],
               },
               H,
             ),
           ),
-          v && n.jsxs("div", { className: "ai-page-msg ai-page-msg-ai", children: [n.jsx("div", { className: "ai-page-msg-avatar", children: "🤖" }), n.jsx("div", { className: "ai-page-msg-text ai-page-typing", children: "正在思考…" })] }),
+          v && n.jsxs("div", { className: "ai-page-msg ai-page-msg-ai", children: [n.jsx("div", { className: "ai-page-msg-avatar", children: n.jsx("img", { src: AI_AVATAR_96, alt: "MoodTree AI" }) }), n.jsx("div", { className: "ai-page-msg-text ai-page-typing", children: "正在思考…" })] }),
           n.jsx("div", { ref: y }),
         ],
       }),
@@ -16858,10 +16938,13 @@ function Fv({ uid: r, viewerId: u, onClose: o, onMessage: sendMessage }) {
     })
   );
 }
+const CHAT_MESSAGE_CACHE = new Map();
 function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, peer: h, onFriendDeleted: v, onAliasUpdated: j, onAvatarClick: y }) {
-  const [C, S] = p.useState([]),
+  const chatCacheKey = `${u}:${o}`,
+    cachedMessages = CHAT_MESSAGE_CACHE.get(chatCacheKey) || [],
+    [C, S] = p.useState(cachedMessages),
     [T, H] = p.useState(""),
-    [k, X] = p.useState(!0),
+    [k, X] = p.useState(cachedMessages.length === 0),
     [J, D] = p.useState(!1),
     [I, V] = p.useState(null),
     [de, P] = p.useState(0);
@@ -16894,6 +16977,14 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
     [multiSelect, setMultiSelect] = p.useState(!1),
     [selectedMessages, setSelectedMessages] = p.useState(new Set()),
     [forwardState, setForwardState] = p.useState(null),
+    [remindMsg, setRemindMsg] = p.useState(null),
+    [rpD, setRpD] = p.useState(0),
+    [rpH, setRpH] = p.useState(0),
+    [rpM, setRpM] = p.useState(0),
+    [remindBanner, setRemindBanner] = p.useState(null),
+    rpWheelD = p.useRef(null),
+    rpWheelH = p.useRef(null),
+    rpWheelM = p.useRef(null),
     longPressRef = p.useRef(null),
     $e = p.useRef(null),
     jt = p.useRef([]),
@@ -16910,8 +17001,11 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
     [Qe, Ge] = p.useState((h == null ? void 0 : h.alias) || ""),
     [Ze, Fe] = p.useState(!1),
     [me, $t] = p.useState(0),
-    xt = p.useRef(0),
+    xt = p.useRef(cachedMessages.length ? Math.max(...cachedMessages.map((msg) => msg.timestamp || 0)) : 0),
     Kt = p.useRef(null),
+    messagesRef = p.useRef(null),
+    stickToBottomRef = p.useRef(cachedMessages.length === 0),
+    highlightTimerRef = p.useRef(null),
     Jt = p.useRef(void 0),
     ca = p.useRef(null),
     ha = p.useRef(null),
@@ -16996,9 +17090,13 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
           if (
             ce.length > 0 &&
             (S((aa) => {
-              const wa = new Set(aa.map((Rn) => Rn.id)),
-                Nn = ce.filter((Rn) => !wa.has(Rn.id));
-              return (Nn.length > 0 && (xt.current = Nn[Nn.length - 1].timestamp), [...aa, ...Nn]);
+              const updates = new Map(ce.map((msg) => [msg.id, msg])),
+                known = new Set(aa.map((msg) => msg.id)),
+                Nn = ce.filter((msg) => !known.has(msg.id)),
+                next = [...aa.map((msg) => updates.has(msg.id) ? { ...msg, ...updates.get(msg.id) } : msg), ...Nn];
+              ce.length > 0 && (xt.current = Math.max(xt.current, ...ce.map((msg) => msg.recalledAt || msg.timestamp || 0)));
+              CHAT_MESSAGE_CACHE.set(chatCacheKey, next);
+              return next;
             }),
             Te.getItem("moodtree-read-receipts") !== "off" && pe("/api/chat/read", { userId: r.id, type: u, target: o }).catch(() => {}),
             ce.some((aa) => aa.from !== r.id))
@@ -17055,26 +17153,30 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
       const te = window.setInterval(z, 30000);
       return () => window.clearInterval(te);
     }, []));
-  const xn = p.useRef(0);
+  const xn = p.useRef(cachedMessages.length);
   (p.useEffect(() => {
-    xn.current = 0;
+    xn.current = (CHAT_MESSAGE_CACHE.get(`${u}:${o}`) || []).length;
+    ee(null);
   }, [o]),
     p.useEffect(() => {
       var te;
       if (C.length === xn.current) return;
-      const z = xn.current ? "smooth" : "auto";
-      ((xn.current = C.length), (te = Kt.current) == null || te.scrollIntoView({ behavior: z }));
+      const z = xn.current ? "smooth" : "auto", shouldScroll = stickToBottomRef.current || xn.current === 0;
+      xn.current = C.length;
+      shouldScroll && ((te = Kt.current) == null || te.scrollIntoView({ behavior: z, block: "end" }));
     }, [C]));
   const Wa = async () => {
       if (!T.trim()) return;
       let z = T.trim();
-      (_ && ((z = `[quote]${_.fromNickname}: ${_.content.slice(0, 50)}[/quote]${z}`), ee(null)), H(""), D(!1), K(!1), V(null));
+      const quote = _ ? { id: _.id, sender: _.fromNickname || ( _.from === r.id ? r.nickname : "好友"), summary: (_.content || "").slice(0, 80) } : null;
+      (H(""), D(!1), K(!1), V(null), (stickToBottomRef.current = !0));
       try {
-        const te = await pe("/api/chat/send", { type: u, target: o, from: r.id, content: z });
+        const te = await pe("/api/chat/send", { type: u, target: o, from: r.id, content: z, ...(quote ? { quote } : {}) });
         if (te.error) {
           (d(te.error), H(z), te.matched_words && (V({ t: z, w: te.matched_words }), P(0)));
           return;
         }
+        ee(null);
         setTimeout(Wt, 200);
       } catch {
         (d("发送失败"), H(z));
@@ -17332,9 +17434,14 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
     recallMessage = async (z) => {
       setActionMsg(null);
       if (Math.floor(Date.now() / 1e3) - (z.timestamp || 0) > 86400) return d("超过24小时的消息不可撤回");
-      const te = await pe("/api/chat/delete", { msgId: z.id, userId: r.id });
+      const te = await pe("/api/chat/recall", { messageId: z.id, userId: r.id });
       if (te.error) return d(te.error);
-      (Dt.current.add(z.id), S((ce) => ce.filter((Xe) => Xe.id !== z.id)), d("已撤回"));
+      S((items) => {
+        const next = items.map((item) => item.id === z.id ? { ...item, recalled: !0, recalledAt: te.recalledAt || Math.floor(Date.now()/1e3), content: "" } : item);
+        CHAT_MESSAGE_CACHE.set(chatCacheKey, next);
+        return next;
+      });
+      d("已撤回");
     },
     favoriteMessage = async (z) => {
       setActionMsg(null);
@@ -17343,6 +17450,7 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
     },
     beginForward = async (z) => {
       setActionMsg(null);
+      stickToBottomRef.current = !1;
       const te = await qe(`/api/friends/${r.id}`);
       setForwardState({ message: z, friends: te.friends || [] });
     },
@@ -17354,26 +17462,62 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
     },
     beginMultiSelect = (z) => {
       setActionMsg(null);
+      stickToBottomRef.current = !1;
       setMultiSelect(!0);
       setSelectedMessages(new Set([z.id]));
     },
     toggleMessageSelection = (z) => setSelectedMessages((te) => { const ce = new Set(te); ce.has(z) ? ce.delete(z) : ce.add(z); return ce; }),
     deleteSelectedMessages = async () => {
+      if (!window.confirm("确认删除？")) return;
       const z = C.filter((te) => selectedMessages.has(te.id) && te.from === r.id);
       for (const te of z) {
         const ce = await pe("/api/chat/delete", { msgId: te.id, userId: r.id });
         ce.error || Dt.current.add(te.id);
       }
-      (S((te) => te.filter((ce) => !Dt.current.has(ce.id))), setSelectedMessages(new Set()), setMultiSelect(!1), d(`已删除${z.length}条自己的消息`));
+      S((items) => {
+        const next = items.filter((item) => !Dt.current.has(item.id));
+        CHAT_MESSAGE_CACHE.set(chatCacheKey, next);
+        return next;
+      });
+      (setSelectedMessages(new Set()), setMultiSelect(!1), d(`已删除${z.length}条自己的消息`));
     },
     quoteMessage = (z) => {
-      (setActionMsg(null), ee(z));
+      (setActionMsg(null), (stickToBottomRef.current = !1), ee(z));
+      requestAnimationFrame(() => {
+        Zt.current && (Zt.current.focus({ preventScroll: !0 }), Zt.current.setSelectionRange(Zt.current.value.length, Zt.current.value.length));
+      });
+    },
+    jumpToQuote = (id) => {
+      const node = messagesRef.current && messagesRef.current.querySelector(`[data-msg-id="${CSS.escape(String(id))}"]`);
+      if (!node) return d("原消息不在当前记录中");
+      node.scrollIntoView({ behavior: "smooth", block: "center" });
+      node.classList.add("chat-msg-highlight");
+      clearTimeout(highlightTimerRef.current);
+      highlightTimerRef.current = setTimeout(() => node.classList.remove("chat-msg-highlight"), 1600);
     },
     remindMessage = (z, delay) => {
-      const te = { id: `reminder_${Date.now()}`, at: Date.now() + delay, text: z.content, chatTarget: o };
+      const te = { id: `reminder_${Date.now()}`, at: Date.now() + delay, text: z.content, chatTarget: o, msgId: z.id };
       let ce = [];
       try { ce = JSON.parse(Te.getItem("moodtree-chat-reminders") || "[]"); } catch {}
       (Te.setItem("moodtree-chat-reminders", JSON.stringify([...ce, te])), setActionMsg(null), d("提醒已设置"));
+    },
+    rpDays = Array.from({ length: 7 }, (z, i) => { const te = new Date(); te.setDate(te.getDate() + i); const ce = "日一二三四五六"[te.getDay()]; return i === 0 ? `今天 周${ce}` : i === 1 ? `明天 周${ce}` : `${te.getMonth() + 1}月${te.getDate()}日 周${ce}`; }),
+    openRemindPicker = () => {
+      const z = new Date();
+      (setRemindMsg(actionMsg), setActionMsg(null), setRpD(0), setRpH((z.getHours() + 1) % 24), setRpM(0));
+      setTimeout(() => {
+        rpWheelD.current && (rpWheelD.current.scrollTop = 0);
+        rpWheelH.current && (rpWheelH.current.scrollTop = ((z.getHours() + 1) % 24) * 44);
+        rpWheelM.current && (rpWheelM.current.scrollTop = 0);
+      }, 60);
+    },
+    rpConfirm = () => {
+      if (!remindMsg) return;
+      const z = new Date();
+      z.setHours(0, 0, 0, 0);
+      const te = new Date(z.getTime() + rpD * 864e5 + rpH * 36e5 + rpM * 6e4);
+      if (te.getTime() <= Date.now()) return d("提醒时间需晚于当前时间");
+      (remindMessage(remindMsg, te.getTime() - Date.now()), setRemindMsg(null));
     },
     searchMessage = (z) => {
       (setActionMsg(null), window.open(`https://www.baidu.com/s?wd=${encodeURIComponent(z.content)}`, "_blank", "noopener,noreferrer"));
@@ -17443,6 +17587,23 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
       const te = Jn(z);
       return te ? n.jsxs(n.Fragment, { children: [n.jsx("div", { className: "chat-quote", children: te.quote }), n.jsx("p", { children: te.text })] }) : n.jsx("p", { children: z });
     };
+  p.useEffect(() => {
+    const tick = () => {
+      let arr = [];
+      try { arr = JSON.parse(Te.getItem("moodtree-chat-reminders") || "[]"); } catch {}
+      if (!arr.length) return;
+      const now = Date.now();
+      const due = arr.filter((x) => x.at <= now);
+      if (!due.length) return;
+      Te.setItem("moodtree-chat-reminders", JSON.stringify(arr.filter((x) => x.at > now)));
+      const it = due[due.length - 1];
+      setRemindBanner({ text: it.text, chatTarget: it.chatTarget, msgId: it.msgId });
+      try { const AC = window.AudioContext || window.webkitAudioContext; const ac = new AC(); const osc = ac.createOscillator(); const gn = ac.createGain(); osc.connect(gn); gn.connect(ac.destination); osc.type = "sine"; osc.frequency.value = 880; gn.gain.setValueAtTime(0.001, ac.currentTime); gn.gain.exponentialRampToValueAtTime(0.25, ac.currentTime + 0.02); gn.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.6); osc.start(); osc.stop(ac.currentTime + 0.65); osc.onended = () => ac.close(); } catch {}
+    };
+    const timer = setInterval(tick, 15000);
+    tick();
+    return () => clearInterval(timer);
+  }, []);
   return n.jsxs("div", {
     className: "chat-view",
     children: [
@@ -17463,6 +17624,11 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
       }),
       n.jsxs("div", {
         className: "chat-messages",
+        ref: messagesRef,
+        onScroll: (event) => {
+          const el = event.currentTarget;
+          stickToBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+        },
         style: Ue ? (Ue.startsWith("linear-gradient") ? { background: Ue } : { backgroundImage: `url(${Ue})`, backgroundSize: "cover", backgroundPosition: "center", backgroundRepeat: "no-repeat" }) : void 0,
         onClick: () => {
           (D(!1), K(!1));
@@ -17473,7 +17639,11 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
             : C.length === 0
               ? n.jsxs("div", { className: "chat-empty", children: [n.jsx("span", { children: "🌱" }), n.jsx("p", { children: "还没有消息，发一条吧～" })] })
               : C.map((z, msgIndex) => {
-                  const previous = C[msgIndex - 1], separated = !previous || (z.timestamp || 0) - (previous.timestamp || 0) > 300, showAvatar = z.from !== r.id && (!previous || previous.from !== z.from || separated);
+                  const previous = C[msgIndex - 1], separated = !previous || (z.timestamp || 0) - (previous.timestamp || 0) > 300;
+                  if (z.recalled) return n.jsxs(n.Fragment, { children: [
+                    separated && n.jsx("div", { className: "chat-time-divider", children: (() => { const time = new Date((z.timestamp || 0) * 1000); return `${String(time.getHours()).padStart(2,"0")}:${String(time.getMinutes()).padStart(2,"0")}`; })() }),
+                    n.jsxs("div", { className: "chat-system-message", "data-msg-id": z.id, children: [z.from === r.id ? "你" : (z.fromNickname || "对方"), "撤回了一条消息"] })
+                  ] }, z.id);
                   return n.jsxs(n.Fragment, { children: [
                     separated && n.jsx("div", { className: "chat-time-divider", children: (() => { const d = z.timestamp ? new Date(z.timestamp * 1000) : new Date(z.time); if (isNaN(d.getTime())) return z.time.slice(11); const hm = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; const mid = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime(); const dd = Math.floor((mid(new Date()) - mid(d)) / 864e5); return dd <= 0 ? hm : dd === 1 ? `昨天 ${hm}` : dd < 7 ? `周${"日一二三四五六"[d.getDay()]} ${hm}` : `${d.getMonth() + 1}月${d.getDate()}日 ${hm}`; })() }),
                     n.jsxs("div", {
@@ -17486,20 +17656,24 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
                       onClick: multiSelect ? () => toggleMessageSelection(z.id) : void 0,
                       children: [
                         multiSelect && n.jsx("span", { className: `msg-checkbox ${selectedMessages.has(z.id) ? "checked" : ""}`, children: selectedMessages.has(z.id) ? "✓" : "" }),
-                        z.from !== r.id && (showAvatar
-                          ? n.jsx("span", { onClick: y ? (te) => { te.stopPropagation(); y(z.from); } : void 0, className: "chat-avatar-slot", children: n.jsx(qt, { user: { avatar: z.fromAvatar, avatarType: z.fromAvatarType, id: z.from }, size: 32 }) })
-                          : n.jsx("span", { className: "chat-avatar-slot empty", "aria-hidden": "true" })),
+                        n.jsx("span", { onClick: z.from !== r.id && y ? (te) => { te.stopPropagation(); y(z.from); } : void 0, className: "chat-avatar-slot", children: n.jsx(qt, { user: z.from === r.id ? { avatar: r.avatar, avatarType: r.avatarType, id: z.from } : { avatar: z.fromAvatar, avatarType: z.fromAvatarType, id: z.from }, size: 40 }) }),
                         n.jsxs("div", {
-                          className: "chat-bubble",
+                          className: "chat-msg-body",
                           children: [
-                            u === "room" && z.from !== r.id && showAvatar && n.jsx("span", { className: "chat-sender", children: z.fromNickname }),
+                            u === "room" && z.from !== r.id && n.jsx("span", { className: "chat-sender", children: z.fromNickname }),
+                            z.quote && n.jsxs("button", { className: "chat-quote-block", onClick: (event) => { event.stopPropagation(); jumpToQuote(z.quote.id); }, children: [n.jsx("b", { children: z.quote.sender || "好友" }), n.jsx("span", { children: z.quote.summary || "" })] }),
+                            n.jsxs("div", {
+                              className: "chat-bubble",
+                              children: [
                             Fn(z.content),
                             pt[z.id] && n.jsxs("div", { className: "chat-voice-text", children: ["📝 ", pt[z.id]] }),
                             x[z.id] && n.jsxs("div", { className: "chat-translated", children: [x[z.id]] }),
                             
                             u === "dm" && z.from === r.id && Te.getItem("moodtree-read-receipts") !== "off" && n.jsx("span", { className: "chat-read-status", children: me >= (z.timestamp || 0) ? "已读" : "未读" }),
+                              ],
+                            }),
                           ],
-                        }),
+                        })
                       ],
                     }),
                   ] }, z.id);
@@ -17507,17 +17681,46 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
           n.jsx("div", { ref: Kt }),
         ],
       }),
-      actionMsg && n.jsx("div", { className: "wechat-message-menu-overlay", onClick: () => setActionMsg(null), children: n.jsx("div", { className: "wechat-message-menu", onClick: (z) => z.stopPropagation(), children: n.jsx("div", { className: "wechat-message-menu-grid", children: [
+      actionMsg && n.jsx("div", { className: "wechat-message-menu-overlay", onPointerDown: (event) => { event.preventDefault(); event.stopPropagation(); setActionMsg(null); }, children: n.jsx("div", { className: "wechat-message-menu", onPointerDown: (event) => event.stopPropagation(), children: n.jsx("div", { className: "wechat-message-menu-grid", children: [
         ["复制", () => copyMessage(actionMsg)],
         ["转发", () => beginForward(actionMsg)],
         ["收藏", () => favoriteMessage(actionMsg)],
         ...(actionMsg.from === r.id ? [["撤回", () => recallMessage(actionMsg)]] : []),
         ["多选", () => beginMultiSelect(actionMsg)],
         ["引用", () => quoteMessage(actionMsg)],
-        ["提醒", () => { const z = window.prompt("提醒时间：输入 1（1小时后）、2（今晚8点）、3（明天8点）或分钟数", "1"); if (!z) return; const te = new Date(), tonight = new Date(te.getFullYear(), te.getMonth(), te.getDate(), 20), tomorrow = new Date(te.getFullYear(), te.getMonth(), te.getDate() + 1, 8); const delay = z === "1" ? 3600000 : z === "2" ? Math.max(60000, tonight.getTime() - Date.now()) : z === "3" ? tomorrow.getTime() - Date.now() : Math.max(60000, Number(z) * 60000); remindMessage(actionMsg, delay); }],
+        ["提醒", () => openRemindPicker()],
         ["搜一搜", () => searchMessage(actionMsg)],
       ].map(([z, te]) => n.jsx("button", { type: "button", onClick: te, children: z }, z)) }) }) }),
-      forwardState && n.jsx("div", { className: "wechat-message-menu-overlay", onClick: () => setForwardState(null), children: n.jsxs("div", { className: "forward-contact-panel", onClick: (z) => z.stopPropagation(), children: [n.jsx("h3", { children: "选择转发对象" }), forwardState.friends.length ? forwardState.friends.map((z) => n.jsxs("button", { onClick: () => sendForward(z), children: [n.jsx(qt, { user: z, size: 36 }), n.jsx("span", { children: z.alias || z.nickname })] }, z.id)) : n.jsx("p", { children: "暂无可转发的好友" }), n.jsx("button", { className: "forward-cancel", onClick: () => setForwardState(null), children: "取消" })] }) }),
+      remindMsg && n.jsx("div", {
+        className: "bd-picker-mask", onClick: () => setRemindMsg(null),
+        children: n.jsxs("div", {
+          className: "bd-picker", onClick: (z) => z.stopPropagation(),
+          children: [
+            n.jsxs("div", { className: "bd-picker-head", children: [n.jsx("button", { className: "bd-picker-cancel", onClick: () => setRemindMsg(null), children: "取消" }), n.jsx("span", { className: "bd-picker-title", children: "设置提醒时间" }), n.jsx("button", { className: "bd-picker-ok rp-ok", onClick: rpConfirm, children: "设置" })] }),
+            n.jsxs("div", { className: "bd-picker-body", children: [
+              n.jsx("div", { className: "bd-wheel", ref: rpWheelD, onScroll: (z) => { clearTimeout(z.currentTarget._t); z.currentTarget._t = setTimeout(() => setRpD(Math.min(6, Math.max(0, Math.round(z.currentTarget.scrollTop / 44)))), 120); }, children: [n.jsx("div", { className: "bd-wheel-pad" }), ...rpDays.map((ce, i) => n.jsx("div", { className: `bd-item ${i === rpD ? "on" : ""}`, onClick: () => { rpWheelD.current && (rpWheelD.current.scrollTo({ top: i * 44, behavior: "smooth" }), setRpD(i)); }, children: ce }, i)), n.jsx("div", { className: "bd-wheel-pad" })] }),
+              n.jsx("div", { className: "bd-wheel", ref: rpWheelH, onScroll: (z) => { clearTimeout(z.currentTarget._t); z.currentTarget._t = setTimeout(() => setRpH(Math.min(23, Math.max(0, Math.round(z.currentTarget.scrollTop / 44)))), 120); }, children: [n.jsx("div", { className: "bd-wheel-pad" }), ...Array.from({ length: 24 }, (z, i) => i).map((v) => n.jsx("div", { className: `bd-item ${v === rpH ? "on" : ""}`, onClick: () => { rpWheelH.current && (rpWheelH.current.scrollTo({ top: v * 44, behavior: "smooth" }), setRpH(v)); }, children: `${v}时` }, v)), n.jsx("div", { className: "bd-wheel-pad" })] }),
+              n.jsx("div", { className: "bd-wheel", ref: rpWheelM, onScroll: (z) => { clearTimeout(z.currentTarget._t); z.currentTarget._t = setTimeout(() => setRpM(Math.min(59, Math.max(0, Math.round(z.currentTarget.scrollTop / 44)))), 120); }, children: [n.jsx("div", { className: "bd-wheel-pad" }), ...Array.from({ length: 60 }, (z, i) => i).map((v) => n.jsx("div", { className: `bd-item ${v === rpM ? "on" : ""}`, onClick: () => { rpWheelM.current && (rpWheelM.current.scrollTo({ top: v * 44, behavior: "smooth" }), setRpM(v)); }, children: `${v}分` }, v)), n.jsx("div", { className: "bd-wheel-pad" })] }),
+            ] }),
+            n.jsxs("div", { className: "rp-quick", children: [["1小时后", 36e5], ["1天后", 864e5], ["1周后", 6048e5], ["1个月后", 2592e6]].map(([lbl, ms]) => n.jsx("button", { onClick: () => { (remindMessage(remindMsg, ms), setRemindMsg(null)); }, children: lbl }, lbl)) }),
+          ],
+        }),
+      }),
+      remindBanner && n.jsx("div", {
+        className: "chat-reminder-banner", onClick: () => {
+          if (remindBanner.chatTarget === o && remindBanner.msgId) {
+            const el = document.querySelector(`[data-msg-id="${remindBanner.msgId}"]`);
+            el && el.scrollIntoView({ behavior: "smooth", block: "center" });
+          }
+          setRemindBanner(null);
+        },
+        children: n.jsxs("div", { className: "chat-reminder-banner-inner", children: [
+          n.jsx("span", { className: "chat-reminder-icon", children: "⏰" }),
+          n.jsxs("div", { className: "chat-reminder-text", children: [n.jsx("b", { children: remindBanner.chatTarget === o ? "消息提醒" : "其他聊天的提醒" }), n.jsx("p", { children: String(remindBanner.text || "").slice(0, 60) })] }),
+          n.jsx("button", { className: "chat-reminder-close", onClick: (z) => { z.stopPropagation(); setRemindBanner(null); }, children: "×" }),
+        ] }),
+      }),
+            forwardState && n.jsx("div", { className: "wechat-message-menu-overlay", onPointerDown: (event) => { event.preventDefault(); event.stopPropagation(); setForwardState(null); }, children: n.jsxs("div", { className: "forward-contact-panel", onPointerDown: (event) => event.stopPropagation(), children: [n.jsx("h3", { children: "选择转发对象" }), forwardState.friends.length ? forwardState.friends.map((z) => n.jsxs("button", { onClick: () => sendForward(z), children: [n.jsx(qt, { user: z, size: 36 }), n.jsx("span", { children: z.alias || z.nickname })] }, z.id)) : n.jsx("p", { children: "暂无可转发的好友" }), n.jsx("button", { className: "forward-cancel", onClick: () => setForwardState(null), children: "取消" })] }) }),
       multiSelect && n.jsxs("div", { className: "multi-select-bar", children: [n.jsxs("span", { children: ["已选 ", selectedMessages.size, " 条"] }), n.jsxs("div", { children: [n.jsx("button", { onClick: () => { setMultiSelect(!1); setSelectedMessages(new Set()); }, children: "取消" }), n.jsx("button", { disabled: selectedMessages.size === 0, onClick: deleteSelectedMessages, children: "删除自己的消息" })] })] }),
       n.jsx("style", {
         children:
@@ -17868,7 +18071,7 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
           children: n.jsxs("div", {
             className: "chat-info-panel",
             children: [
-              n.jsxs("div", { className: "chat-info-header", children: [n.jsx("button", { className: "back-button", onClick: () => U(!1), children: "←" }), n.jsx("h2", { children: "聊天信息" })] }),
+              n.jsxs("div", { className: "chat-info-header", children: [n.jsx("h2", { children: "聊天信息" })] }),
               n.jsxs("div", {
                 className: "chat-info-body",
                 children: [
@@ -17912,7 +18115,7 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
                               onClick: () => {
                                 (Ge(h.alias || ""), Fe(!0));
                               },
-                              children: [n.jsx("span", { children: "设置备注" }), n.jsxs("span", { className: "chat-info-trailing", children: [n.jsx("span", { className: "chat-info-value", children: h.alias || "未设置" }), n.jsx("span", { className: "chat-info-arrow", children: ">" })] })],
+                              children: [n.jsx("span", { children: "设置备注" }), n.jsxs("span", { className: "chat-info-trailing", children: [n.jsx("span", { className: "chat-info-value", children: h.alias || "未设置" })] })],
                             }),
                           }),
                           n.jsxs("div", { className: "chat-info-group", children: [
@@ -17930,7 +18133,7 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
                           n.jsx("div", { className: "chat-info-group", children: n.jsxs("div", {
                             className: "chat-info-item",
                             onClick: () => Le.current && Le.current.click(),
-                            children: [n.jsx("span", { children: "设置聊天背景" }), n.jsxs("span", { className: "chat-info-trailing", children: [Ue && n.jsx("span", { className: "chat-info-value", children: "已设置" }), n.jsx("span", { className: "chat-info-arrow", children: ">" })] })],
+                            children: [n.jsx("span", { children: "设置聊天背景" }), n.jsxs("span", { className: "chat-info-trailing", children: [Ue && n.jsx("span", { className: "chat-info-value", children: "已设置" })] })],
                           }) }),
                           n.jsx("input", { ref: Le, type: "file", accept: "image/*", className: "chat-bg-file-input", onChange: (z) => { const te = z.target.files && z.target.files[0]; z.target.value = ""; te && Nt(te); } }),
                           n.jsxs("div", { className: "chat-info-group chat-info-danger-group", children: [
