@@ -16,3 +16,48 @@
 .ai-chat-messages{display:flex;flex-direction:column;gap:10px;overflow:auto}.ai-msg-ai{display:flex;align-items:flex-start;gap:8px}.ai-msg-avatar{flex:0 0 34px;width:34px;height:34px;display:grid;place-items:center;border-radius:50%;background:#e1ece1}.ai-msg-text{max-width:80%;padding:10px 13px;border-radius:15px;background:#fff}.ai-typing{color:#879088}.ai-page-top-back,.bottle-top-back{border:0;background:transparent;color:inherit}
 .color-wheel-picker,.cpw-wrap{display:flex;flex-direction:column;gap:12px}.color-wheel-canvas{width:min(280px,80vw);aspect-ratio:1;border-radius:50%;touch-action:none}.color-wheel-bottom,.color-wheel-preview{display:flex;align-items:center;gap:10px}.color-wheel-hex{font-family:monospace}.color-wheel-slider{width:100%}.admin-panel{padding:16px}.admin-dismiss-btn,.admin-unban-btn,.appeal-btn,.bottle-refresh,.bottle-reply-send{border:0;border-radius:12px;padding:8px 12px;background:var(--sage-dark);color:#fff}.banned-details,.block-item-info{flex:1;min-width:0}.bottle-replies-view{display:flex;flex-direction:column;gap:8px}.bottle-reply-cancel{border:1px solid #dfe3dc;border-radius:12px;padding:8px 12px;background:#fff}.bottle-tag{display:inline-block;border-radius:10px;padding:3px 7px;background:#edf3ec;font-size:9px}
 @media(max-width:780px){.masonry,.bottle-list,.skeleton-feed{grid-template-columns:1fr}.post-images-grid,.detail-images-grid,.publish-image-grid{gap:3px}.chat-list-item{padding:11px 4px}.chat-messages{padding:12px}.chat-bubble{max-width:100%}}
+
+/* ===== v3.1 优化层：位置卡片（微信同款） ===== */
+.chat-location { flex-direction: column; align-items: stretch; gap: 0; min-width: 0; width: min(252px, 68vw); margin: -8px -13px; padding: 0; border-radius: 14px; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.08); overflow: hidden; cursor: pointer; }
+.location-map { position: relative; height: 104px; background: linear-gradient(135deg,#e9f1e7 0%,#e0eade 55%,#d6e3d5 100%); overflow: hidden; flex: none; }
+.location-road { position: absolute; background: #fff; border-radius: 3px; display: block; }
+.location-road-a { left: -6%; top: 34%; width: 112%; height: 7px; transform: rotate(-8deg); opacity: .9; }
+.location-road-b { left: 26%; top: -10%; width: 6px; height: 120%; transform: rotate(14deg); opacity: .9; }
+.location-road-c { left: -4%; top: 74%; width: 108%; height: 4px; transform: rotate(-4deg); opacity: .55; }
+.location-road-d { right: 20%; top: -10%; width: 4px; height: 120%; transform: rotate(-10deg); opacity: .55; }
+.location-pin { position: absolute; left: 50%; top: 48%; transform: translate(-50%,-85%); font-size: 30px; line-height: 1; filter: drop-shadow(0 3px 3px rgba(47,86,60,.35)); }
+.location-meta { display: flex; flex-direction: column; gap: 2px; padding: 9px 12px 10px; min-width: 0; }
+.chat-location .location-title { font-size: 13px; font-weight: 600; color: #26352e; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.location-addr { font-size: 10px; color: #8a938c; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ===== v3.1 优化层：本周心情小结 ===== */
+.mine-weekly { background: #fffdf8; border: 1px solid var(--line); border-radius: 18px; padding: 16px 18px; margin: 0 0 14px; box-shadow: 0 4px 14px rgba(62,91,72,.06); }
+.mine-weekly-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; }
+.mine-weekly-head b { font: 600 15px -apple-system,"PingFang SC","Helvetica Neue","Microsoft YaHei",sans-serif; color: var(--ink); }
+.mine-weekly-head small { color: #9ba19d; font-size: 11px; }
+.mine-weekly-tip { margin: 0; color: var(--muted); font-size: 12px; }
+.mine-weekly-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 13px; }
+.mine-weekly-stats > div { display: flex; flex-direction: column; gap: 2px; background: var(--sage-soft); border-radius: 12px; padding: 10px 8px; text-align: center; min-width: 0; }
+.mine-weekly-stats b { font-size: 17px; color: var(--sage-dark); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mine-weekly-stats span { font-size: 10px; color: #8a938c; }
+.mine-weekly-bars { display: flex; flex-direction: column; gap: 7px; }
+.mine-weekly-bar-row { display: flex; align-items: center; gap: 8px; }
+.mine-weekly-bar-label { flex: 0 0 72px; font-size: 11px; color: var(--muted); text-align: right; }
+.mine-weekly-bar-track { flex: 1; height: 8px; border-radius: 99px; background: #efece3; overflow: hidden; }
+.mine-weekly-bar-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg,var(--sage),var(--sage-dark)); transition: width .4s ease; min-width: 0; }
+.mine-weekly-bar-num { flex: 0 0 18px; font-size: 11px; color: #8a938c; }
+
+/* ===== 10. 微信式文字选择 ===== */
+.mt-sel-layer { position: fixed; inset: 0; z-index: 9999; pointer-events: none; }
+.mt-sel-toolbar { position: absolute; pointer-events: auto; display: flex; align-items: stretch; background: rgba(28, 28, 30, 0.94); border-radius: 10px; padding: 2px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28); user-select: none; -webkit-user-select: none; }
+.mt-sel-toolbar button { appearance: none; -webkit-appearance: none; border: 0; background: transparent; color: #fff; font-size: 13px; line-height: 1; padding: 9px 14px; cursor: pointer; font-family: inherit; }
+.mt-sel-toolbar button + button { border-left: 1px solid rgba(255, 255, 255, 0.16); }
+.mt-sel-toolbar button:active { opacity: 0.55; }
+.mt-sel-handle { position: absolute; width: 18px; height: 26px; pointer-events: auto; touch-action: none; cursor: text; z-index: 2; }
+.mt-sel-handle::before { content: ""; position: absolute; left: 8px; width: 2px; height: 16px; background: var(--sage, #4f765f); border-radius: 1px; }
+.mt-sel-handle::after { content: ""; position: absolute; left: 3px; width: 12px; height: 12px; border-radius: 50%; background: var(--sage, #4f765f); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3); }
+.mt-sel-h-start::before { top: 10px; }
+.mt-sel-h-start::after { top: 0; }
+.mt-sel-h-end::before { top: 0; }
+.mt-sel-h-end::after { bottom: 0; }
+.chat-bubble ::selection, .chat-bubble::selection { background: rgba(79, 118, 95, 0.3); }

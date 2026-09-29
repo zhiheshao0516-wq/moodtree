@@ -11147,6 +11147,20 @@ function fp() {
   return [...Mu, ...dp()];
 }
 const Lm = { enabled: !1, mode: "auto", manualMode: "day", starryBg: !0, energyCard: !0, nightRadio: !0, dailyChallenge: !0, breathing: !0, sleepReminder: !1, sleepReminderTime: "23:30", aiStyle: "auto" };
+function mtWgs2Gcj(mtLat, mtLng) {
+  if (mtLng < 72.004 || mtLng > 137.8347 || mtLat < 0.8293 || mtLat > 55.8271) return [mtLat, mtLng];
+  const mtA = 6378245, mtEE = 0.00669342162296594623, mtRad = (d) => (d * Math.PI) / 180,
+    mtLatT = (x, y) => { let r2 = -100 + 2 * x + 3 * y + 0.2 * y * y + 0.1 * x * y + 0.2 * Math.sqrt(Math.abs(x)) + (20 * Math.sin(6 * x * Math.PI) + 20 * Math.sin(2 * x * Math.PI)) * 2 / 3 + (20 * Math.sin(y * Math.PI) + 40 * Math.sin((y * Math.PI) / 3)) * 2 / 3 + (160 * Math.sin((y * Math.PI) / 12) + 320 * Math.sin((y * Math.PI) / 30)) * 2 / 3; return r2; },
+    mtLngT = (x, y) => { let r2 = 300 + x + 2 * y + 0.1 * x * x + 0.1 * x * y + 0.1 * Math.sqrt(Math.abs(x)) + (20 * Math.sin(6 * x * Math.PI) + 20 * Math.sin(2 * x * Math.PI)) * 2 / 3 + (20 * Math.sin(x * Math.PI) + 40 * Math.sin((x * Math.PI) / 3)) * 2 / 3 + (150 * Math.sin((x * Math.PI) / 12) + 300 * Math.sin((x * Math.PI) / 30)) * 2 / 3; return r2; };
+  let mtDLat = mtLatT(mtLng - 105, mtLat - 35), mtDLng = mtLngT(mtLng - 105, mtLat - 35);
+  const mtRadLat = (mtLat * Math.PI) / 180;
+  let mtMagic = Math.sin(mtRadLat);
+  mtMagic = 1 - mtEE * mtMagic * mtMagic;
+  const mtSqrt = Math.sqrt(mtMagic);
+  mtDLat = (mtDLat * 180) / ((mtA * (1 - mtEE)) / (mtMagic * mtSqrt) * Math.PI);
+  mtDLng = (mtDLng * 180) / (mtA / mtSqrt * Math.cos(mtRadLat) * Math.PI);
+  return [mtLat + mtDLat, mtLng + mtDLng];
+}
 function Kn() {
   try {
     const r = JSON.parse(Te.getItem("moodtree-dn-settings") || "{}");
@@ -12221,6 +12235,11 @@ function Uv() {
     me = (M) => {
       (H(M), window.clearTimeout(Fe.current), (Fe.current = window.setTimeout(() => H(""), 2500)));
     },
+    mtNetEffect = p.useEffect(() => {
+      const mtOn = () => me("网络已恢复 🌿"), mtOff = () => me("网络似乎断开了，请检查连接");
+      navigator.onLine === !1 && mtOff();
+      return (window.addEventListener("online", mtOn), window.addEventListener("offline", mtOff), () => { (window.removeEventListener("online", mtOn), window.removeEventListener("offline", mtOff)); });
+    }, []),
     $t = (M, Q) => {
       if (!k) {
         D(!0);
@@ -17423,8 +17442,9 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
         async (z) => {
           try {
             const { latitude: te, longitude: ce } = z.coords,
-              Xe = `https://uri.amap.com/marker?position=${ce},${te}&name=我的位置`;
-            (await pe("/api/chat/send", { type: u, target: o, from: r.id, content: `[location]${te},${ce}|${Xe}[/location]` }), K(!1), setTimeout(Wt, 200));
+              GJ = mtWgs2Gcj(te, ce),
+              Xe = `https://apis.map.qq.com/uri/v1/marker?marker=coord:${GJ[0]},${GJ[1]};title:${encodeURIComponent("我的位置")}&referer=moodtree`;
+            (await pe("/api/chat/send", { type: u, target: o, from: r.id, content: `[location]${te},${ce}|${Xe}|我的位置|点击查看详细位置[/location]` }), K(!1), setTimeout(Wt, 200));
           } catch {
             d("位置发送失败");
           }
@@ -17464,7 +17484,7 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
     un = (z) => z.startsWith("[location]") && z.endsWith("[/location]"),
     tl = (z) => {
       const ce = z.slice(10, -11).split("|");
-      return { coord: ce[0] || "", url: ce[1] || "" };
+      return { coord: ce[0] || "", url: ce[1] || "", title: ce[2] || "", addr: ce[3] || "" };
     },
     openMessageMenu = (z) => { try { const _sel = window.getSelection(); _sel && _sel.removeAllRanges(); } catch {} setActionMsg(z); },
     startMessagePress = (z) => {
@@ -17537,6 +17557,85 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
         Zt.current && (Zt.current.focus({ preventScroll: !0 }), Zt.current.setSelectionRange(Zt.current.value.length, Zt.current.value.length));
       });
     },
+    mtCopyFallback = (txt, ok, fail) => { const ta = document.createElement("textarea"); ta.value = txt; ta.style.cssText = "position:fixed;left:-9999px;top:0"; document.body.appendChild(ta); ta.select(); let done = !1; try { done = document.execCommand("copy"); } catch (e) {} ta.remove(); done ? ok() : fail(); },
+    mtShowTextSelection = (bubble, flash) => {
+      if (window.__mtSelDestroy) { try { window.__mtSelDestroy(); } catch (e) {} window.__mtSelDestroy = null; }
+      if (bubble.querySelector(".chat-img,.chat-video,.chat-voice-msg,.chat-location")) return flash("该消息不支持选取文字");
+      const EXCL = ".chat-voice-text,.chat-translated,.chat-read-status";
+      const nodes = [];
+      const walker = document.createTreeWalker(bubble, NodeFilter.SHOW_TEXT, { acceptNode: (n) => { if (!n.nodeValue || !n.nodeValue.trim()) return NodeFilter.FILTER_REJECT; const p = n.parentElement; if (p && p.closest && p.closest(EXCL)) return NodeFilter.FILTER_REJECT; return NodeFilter.FILTER_ACCEPT; } });
+      let tn;
+      while ((tn = walker.nextNode())) nodes.push(tn);
+      if (!nodes.length) return flash("该消息没有可选取的文字");
+      const lens = nodes.map((n) => n.nodeValue.length);
+      const total = lens.reduce((a, b) => a + b, 0);
+      const mtRange = (pos) => { pos = Math.min(Math.max(pos, 0), total); let acc = 0; for (let i = 0; i < nodes.length; i++) { if (pos <= acc + lens[i]) { const r = document.createRange(); r.setStart(nodes[i], pos - acc); r.setEnd(nodes[i], pos - acc); return r; } acc += lens[i]; } const last = nodes[nodes.length - 1]; const r = document.createRange(); r.setStart(last, lens[nodes.length - 1]); r.setEnd(last, lens[nodes.length - 1]); return r; };
+      const mtPointToPos = (x, y) => { let sc = null, so = 0; if (document.caretRangeFromPoint) { const r = document.caretRangeFromPoint(x, y); if (r) { sc = r.startContainer; so = r.startOffset; } } else if (document.caretPositionFromPoint) { const p = document.caretPositionFromPoint(x, y); if (p) { sc = p.offsetNode; so = p.offset; } } if (!sc || sc.nodeType !== 3) { const rect = bubble.getBoundingClientRect(); return y < rect.top + rect.height / 2 ? 0 : total; } const idx = nodes.indexOf(sc); if (idx < 0) { const rect = bubble.getBoundingClientRect(); return y < rect.top + rect.height / 2 ? 0 : total; } let pos = 0; for (let i = 0; i < idx; i++) pos += lens[i]; return pos + Math.min(Math.max(so, 0), lens[idx]); };
+      let selPos = { s: 0, e: total }, drag = null, dead = !1;
+      const layer = document.createElement("div");
+      layer.className = "mt-sel-layer";
+      layer.innerHTML = '<div class="mt-sel-toolbar"><button type="button" data-act="copy">复制</button><button type="button" data-act="all">全选</button><button type="button" data-act="cancel">取消</button></div><div class="mt-sel-handle mt-sel-h-start"></div><div class="mt-sel-handle mt-sel-h-end"></div>';
+      document.body.appendChild(layer);
+      const tb = layer.querySelector(".mt-sel-toolbar"), hS = layer.querySelector(".mt-sel-h-start"), hE = layer.querySelector(".mt-sel-h-end");
+      const mtApply = () => {
+        if (dead) return;
+        const a = Math.min(selPos.s, selPos.e), b = Math.max(selPos.s, selPos.e);
+        const rs = mtRange(a), re = mtRange(b);
+        const range = document.createRange();
+        range.setStart(rs.startContainer, rs.startOffset);
+        range.setEnd(re.startContainer, re.startOffset);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        try { sel.addRange(range); } catch (e) {}
+        const all = range.getClientRects();
+        const rects = [];
+        for (let i = 0; i < all.length; i++) { const r = all[i]; if (r.width > 1 || r.height > 1) rects.push(r); }
+        if (!rects.length) return;
+        const first = rects[0], last = rects[rects.length - 1];
+        hS.style.left = Math.round(first.left - 9) + "px";
+        hS.style.top = Math.round(first.top - 13) + "px";
+        hE.style.left = Math.round(last.right - 9) + "px";
+        hE.style.top = Math.round(last.bottom - 13) + "px";
+        const tw = tb.offsetWidth || 170;
+        let tx = Math.min(Math.max(first.left + first.width / 2 - tw / 2, 10), window.innerWidth - tw - 10);
+        let ty = first.top - 48;
+        if (ty < 8) ty = last.bottom + 10;
+        tb.style.left = Math.round(tx) + "px";
+        tb.style.top = Math.round(ty) + "px";
+      };
+      mtApply();
+      const mtDestroy = (msg) => { if (dead) return; dead = !0; window.__mtSelDestroy = null; try { window.getSelection().removeAllRanges(); } catch (e) {} layer.remove(); window.removeEventListener("pointermove", mtMove); window.removeEventListener("pointerup", mtUp); window.removeEventListener("pointercancel", mtUp); window.removeEventListener("scroll", mtScroll, !0); document.removeEventListener("pointerdown", mtOutside, !0); if (msg) flash(msg); };
+      const mtMove = (ev) => { if (!drag || dead) return; ev.preventDefault(); const p = mtPointToPos(ev.clientX, ev.clientY); if (p == null) return; if (drag === "s") selPos.s = p; else selPos.e = p; mtApply(); };
+      const mtUp = () => { drag = null; };
+      const mtScroll = () => { if (!drag) mtApply(); };
+      const mtOutside = (ev) => { if (!dead && !layer.contains(ev.target)) mtDestroy(); };
+      const mtDown = (which) => (ev) => { ev.preventDefault(); ev.stopPropagation(); drag = which; };
+      hS.addEventListener("pointerdown", mtDown("s"));
+      hE.addEventListener("pointerdown", mtDown("e"));
+      window.addEventListener("pointermove", mtMove, { passive: !1 });
+      window.addEventListener("pointerup", mtUp);
+      window.addEventListener("pointercancel", mtUp);
+      window.addEventListener("scroll", mtScroll, !0);
+      tb.addEventListener("click", (ev) => {
+        const btn = ev.target.closest("button");
+        if (!btn || dead) return;
+        const k = btn.getAttribute("data-act");
+        if (k === "cancel") return mtDestroy();
+        if (k === "all") { selPos = { s: 0, e: total }; mtApply(); return; }
+        if (k === "copy") {
+          const a = Math.min(selPos.s, selPos.e), b = Math.max(selPos.s, selPos.e);
+          let acc = 0, txt = "";
+          for (let i = 0; i < nodes.length; i++) { const L = lens[i]; if (acc + L > a && acc < b) txt += nodes[i].nodeValue.slice(Math.max(a - acc, 0), Math.min(b - acc, L)); acc += L; }
+          txt = txt.trim();
+          if (!txt) return mtDestroy("没有可复制的内容");
+          const ok = () => mtDestroy("已复制到剪贴板"), fail = () => mtDestroy("复制失败");
+          if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(ok, () => mtCopyFallback(txt, ok, fail));
+          else mtCopyFallback(txt, ok, fail);
+        }
+      });
+      setTimeout(() => { if (!dead) document.addEventListener("pointerdown", mtOutside, !0); }, 0);
+      window.__mtSelDestroy = mtDestroy;
+    },
     jumpToQuote = (id) => {
       const node = messagesRef.current && messagesRef.current.querySelector(`[data-msg-id="${CSS.escape(String(id))}"]`);
       if (!node) return d("原消息不在当前记录中");
@@ -17545,7 +17644,7 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
       clearTimeout(highlightTimerRef.current);
       highlightTimerRef.current = setTimeout(() => node.classList.remove("chat-msg-highlight"), 1600);
     },
-    selectMessageText = (z) => { setActionMsg(null); const node = messagesRef.current && messagesRef.current.querySelector(`[data-msg-id="${CSS.escape(String(z.id))}"] .chat-bubble`); if (!node) return d("无法选中文本"); const sel = window.getSelection(); sel.removeAllRanges(); try { sel.selectAllChildren(node); } catch (e) { return d("当前浏览器不支持选取"); } d("已全选该条消息，可拖动调整范围后复制"); },
+    selectMessageText = (z) => { setActionMsg(null); const node = messagesRef.current && messagesRef.current.querySelector(`[data-msg-id="${CSS.escape(String(z.id))}"] .chat-bubble`); if (!node) return d("无法选中文本"); mtShowTextSelection(node, d); },
     remindMessage = (z, delay) => {
       const te = { id: `reminder_${Date.now()}`, at: Date.now() + delay, text: z.content, chatTarget: o, msgId: z.id };
       let ce = [];
@@ -17607,14 +17706,22 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
         });
       }
       if (un(z)) {
-        const { coord: ce, url: Xe } = tl(z);
+        const { url: Xe, title: mtT, addr: mtA } = tl(z);
         return n.jsxs("div", {
           className: "chat-location",
-          onClick: () => window.open(Xe),
+          onClick: () => Xe && window.open(Xe),
           children: [
-            n.jsx("span", { className: "location-icon", children: "📍" }),
-            n.jsxs("div", { className: "location-info", children: [n.jsx("span", { className: "location-title", children: "位置" }), n.jsx("span", { className: "location-coord", children: ce })] }),
-            n.jsx("span", { className: "location-arrow", children: "→" }),
+            n.jsxs("div", { className: "location-map", children: [
+              n.jsx("i", { className: "location-road location-road-a" }),
+              n.jsx("i", { className: "location-road location-road-b" }),
+              n.jsx("i", { className: "location-road location-road-c" }),
+              n.jsx("i", { className: "location-road location-road-d" }),
+              n.jsx("span", { className: "location-pin", children: "📍" }),
+            ] }),
+            n.jsxs("div", { className: "location-meta", children: [
+              n.jsx("span", { className: "location-title", children: mtT || "我的位置" }),
+              n.jsx("span", { className: "location-addr", children: mtA || "点击查看详细位置" }),
+            ] }),
           ],
         });
       }
@@ -19552,6 +19659,38 @@ function e0({ posts: r, openPost: u, user: o, onSignOut: c, onEditProfile: m, on
                                   : n.jsxs("div", { className: "empty", children: [n.jsx("span", { children: "🗂" }), n.jsx("h3", { children: "还没有合集" }), n.jsx("p", { children: "新建一个合集，把好作品整理在一起。" })] }),
                               ],
                             })),
+                      k === "posts" &&
+                        n.jsx("div", {
+                          className: "mine-weekly",
+                          children: (() => {
+                            const mtTs = (g) => { const m = Number(g.id); return Number.isFinite(m) && m > 1e12 ? m : Date.parse((g.time || "").replace(/-/g, "/")) || null; },
+                              mtWk = me.filter((g) => { const t = mtTs(g); return t && Date.now() - t < 6048e5; }),
+                              mtCnt = mtWk.length,
+                              mtWarm = mtWk.reduce((s2, g) => s2 + (g.likes || 0) + (g.hugs || 0) + (g.same || 0), 0),
+                              mtNeed = {};
+                            mtWk.forEach((g) => { mtNeed[g.need] = (mtNeed[g.need] || 0) + 1; });
+                            const mtTop = Object.entries(mtNeed).sort((a2, b2) => b2[1] - a2[1])[0],
+                              mtBars = Vr.map((mtLb) => ({ label: mtLb, c: mtNeed[mtLb] || 0 })),
+                              mtShort = (x) => x.replace("我希望", "").replace("我只想", "");
+                            return n.jsxs(n.Fragment, { children: [
+                              n.jsxs("div", { className: "mine-weekly-head", children: [n.jsx("b", { children: "📈 本周心情小结" }), n.jsx("small", { children: "近 7 天" })] }),
+                              mtCnt === 0
+                                ? n.jsx("p", { className: "mine-weekly-tip", children: "这周还没有留下心情，写点什么吧 🌱" })
+                                : n.jsxs(n.Fragment, { children: [
+                                    n.jsxs("div", { className: "mine-weekly-stats", children: [
+                                      n.jsxs("div", { children: [n.jsx("b", { children: mtCnt }), n.jsx("span", { children: "条心情" })] }),
+                                      n.jsxs("div", { children: [n.jsx("b", { children: mtTop ? mtShort(mtTop[0]) : "—" }), n.jsx("span", { children: "最多是" })] }),
+                                      n.jsxs("div", { children: [n.jsx("b", { children: mtWarm }), n.jsx("span", { children: "收到温暖" })] }),
+                                    ] }),
+                                    n.jsx("div", { className: "mine-weekly-bars", children: mtBars.map((b2) => n.jsxs("div", { className: "mine-weekly-bar-row", children: [
+                                      n.jsx("span", { className: "mine-weekly-bar-label", children: mtShort(b2.label) }),
+                                      n.jsx("div", { className: "mine-weekly-bar-track", children: n.jsx("div", { className: "mine-weekly-bar-fill", style: { width: `${mtCnt ? Math.round((b2.c / mtCnt) * 100) : 0}%` } }) }),
+                                      n.jsx("span", { className: "mine-weekly-bar-num", children: b2.c }),
+                                    ] }, b2.label)) }),
+                                  ] }),
+                            ] });
+                          })(),
+                        }),
                       (k === "posts" || k === "saved") &&
                         ((k === "posts" ? me : $t).length
                           ? n.jsx("div", {
@@ -19807,6 +19946,24 @@ function e0({ posts: r, openPost: u, user: o, onSignOut: c, onEditProfile: m, on
                               onClick: () => un(!0),
                               children: [
                                 n.jsxs("span", { children: [n.jsx("b", { children: "🔒 账号密码" }), n.jsx("small", { children: "设置或修改登录密码" })] }),
+                                n.jsx("span", { style: { fontSize: "14px", color: "var(--muted)" }, children: "›" }),
+                              ],
+                            }),
+                            n.jsxs("div", {
+                              className: "settings-item",
+                              onClick: () => {
+                                try {
+                                  const mtMine = (r || []).filter((g) => g.authorId === o.id),
+                                    mtBlob = new Blob([JSON.stringify({ app: "MoodTree", exported_at: new Date().toISOString(), user: { id: o.id, nickname: o.nickname }, posts: mtMine }, null, 2)], { type: "application/json" }),
+                                    mtUrl = URL.createObjectURL(mtBlob),
+                                    mtA2 = document.createElement("a");
+                                  (mtA2.href = mtUrl, mtA2.download = `moodtree-posts-${new Date().toISOString().slice(0, 10)}.json`, document.body.appendChild(mtA2), mtA2.click(), mtA2.remove(), setTimeout(() => URL.revokeObjectURL(mtUrl), 3000), h(`已导出 ${mtMine.length} 条帖子`));
+                                } catch {
+                                  h("导出失败，请重试");
+                                }
+                              },
+                              children: [
+                                n.jsxs("span", { children: [n.jsx("b", { children: "📦 导出我的数据" }), n.jsx("small", { children: "下载我的树洞帖子（JSON 备份）" })] }),
                                 n.jsx("span", { style: { fontSize: "14px", color: "var(--muted)" }, children: "›" }),
                               ],
                             }),
