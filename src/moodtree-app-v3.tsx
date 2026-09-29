@@ -11785,8 +11785,9 @@ const USE_PET_MOCK = false,
 
 const PET_THREE_URL="/vendor/pets-three.js";
 let petThreeModulePromise=null;
-function Pet3DViewer({pet:r}) {
-  const u=p.useRef(null),c=p.useRef(null),[m,d]=p.useState("loading"),[h,v]=p.useState(!1);
+function Pet3DViewer({pet:r,action:o,onTap:a}) {
+  const u=p.useRef(null),c=p.useRef(null),f=p.useRef(null),[m,d]=p.useState("loading"),[h,v]=p.useState(!1);
+  p.useEffect(()=>{f.current=o?{...o,started:performance.now()}:null},[o==null?void 0:o.id]);
   p.useEffect(()=>{
     let j=!1,y=null,C=null,S=null,T=null,H=null,k=null,X=!0,J=0,D=1,I=new Map,V=0,de=null;
     const P=()=>{
@@ -11794,6 +11795,7 @@ function Pet3DViewer({pet:r}) {
       J=requestAnimationFrame(P);
       const Y=T?T.getDelta():.016;
       H&&H.update(Y);
+      if(k){const q=f.current,E=q?(performance.now()-q.started)/1000:99,R=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;if(!R&&E<.9){const W=Math.sin(Math.min(1,E/.9)*Math.PI);q.type==="pet"&&(k.rotation.z=.12*W);q.type==="feed"&&(k.scale.setScalar(D*(1+.08*W)));q.type==="play"&&(k.position.y=.42*W,k.rotation.y+=.08);q.type==="mood"&&(k.position.y=.25*W,k.rotation.y+=.05)}else{k.rotation.z*=.82;k.position.y*=.82;const W=k.scale.x+(D-k.scale.x)*.16;k.scale.setScalar(W)}}
       C.render(y,S)
     },Y=()=>{
       if(!u.current||!C||!S)return;
@@ -11812,11 +11814,11 @@ function Pet3DViewer({pet:r}) {
         const ye=await(petThreeModulePromise||(petThreeModulePromise=import(PET_THREE_URL)));
         if(j||!u.current)return;
         y=new ye.Scene;S=new ye.PerspectiveCamera(32,1,.1,100);S.position.set(0,.55,6.5);
-        C=new ye.WebGLRenderer({alpha:!0,antialias:!0,powerPreference:"high-performance"});C.setPixelRatio(Math.min(window.devicePixelRatio||1,2));C.setClearColor(0,0);C.outputColorSpace=ye.SRGBColorSpace;
+        C=new ye.WebGLRenderer({alpha:!0,antialias:!0,powerPreference:"high-performance"});C.setPixelRatio(Math.min(window.devicePixelRatio||1,2));C.setClearColor(0,0);C.outputColorSpace=ye.SRGBColorSpace;C.shadowMap.enabled=!0;C.shadowMap.type=ye.PCFSoftShadowMap;C.toneMapping=ye.ACESFilmicToneMapping;C.toneMappingExposure=1.08;
         C.domElement.className="pet-3d-canvas";u.current.appendChild(C.domElement);
-        y.add(new ye.HemisphereLight(16777215,8291463,2.6));const Ce=new ye.DirectionalLight(16777215,3);Ce.position.set(3,5,5);y.add(Ce);
+        y.add(new ye.HemisphereLight(16777215,8291463,2.25));const Ce=new ye.DirectionalLight(16777215,3.2);Ce.position.set(3,5,5);Ce.castShadow=!0;Ce.shadow.mapSize.set(512,512);y.add(Ce);const floor=new ye.Mesh(new ye.CircleGeometry(1.55,48),new ye.ShadowMaterial({color:4286021,opacity:.16}));floor.rotation.x=-Math.PI/2;floor.position.y=-1.72;floor.receiveShadow=!0;y.add(floor);
         const Se=new ye.GLTFLoader;Se.load(`/pets3d/${r.type}.glb`,ke=>{
-          if(j)return;k=ke.scene;y.add(k);k.scale.setScalar(D);H=new ye.AnimationMixer(k);ke.animations&&ke.animations[0]&&H.clipAction(ke.animations[0]).play();T=new ye.Clock;Y();d("ready");P()
+          if(j)return;k=ke.scene;k.traverse(e=>{e.isMesh&&(e.castShadow=!0,e.receiveShadow=!0,e.material&&(e.material.roughness=Math.min(.82,e.material.roughness??.72),e.material.needsUpdate=!0))});y.add(k);k.scale.setScalar(D);H=new ye.AnimationMixer(k);ke.animations&&ke.animations[0]&&H.clipAction(ke.animations[0]).play();T=new ye.Clock;Y();d("ready");P()
         },void 0,()=>{!j&&d("failed")});
         c.current=new ResizeObserver(Y);c.current.observe(u.current);
         de=new IntersectionObserver(e=>{X=!!e[0]?.isIntersecting;X&&!J&&P()},{rootMargin:"80px"});de.observe(u.current);
@@ -11825,7 +11827,7 @@ function Pet3DViewer({pet:r}) {
     })();
     return()=>{j=!0;cancelAnimationFrame(J);c.current&&c.current.disconnect();de&&de.disconnect();if(u.current){u.current.removeEventListener("pointerdown",K);u.current.removeEventListener("pointermove",F);u.current.removeEventListener("pointerup",Z);u.current.removeEventListener("pointercancel",Z)}H&&H.stopAllAction();k&&k.traverse(e=>{e.geometry&&e.geometry.dispose&&e.geometry.dispose();if(e.material){const Z=Array.isArray(e.material)?e.material:[e.material];Z.forEach(ye=>ye.dispose&&ye.dispose())}});C&&(C.dispose(),C.domElement.remove())}
   },[r.type]);
-  return n.jsxs("div",{className:`pet-3d-viewer ${m}`,children:[
+  return n.jsxs("div",{className:`pet-3d-viewer ${m} ${o?`doing-${o.type}`:""}`,onClick:a,children:[
     h?n.jsx("div",{className:"pet-image-fallback large",children:"🌱"}):n.jsx("img",{className:"pet-3d-poster",src:r.image,alt:r.name,onError:()=>v(!0)}),
     n.jsx("div",{className:"pet-3d-mount",ref:u}),
     m==="loading"&&n.jsx("span",{className:"pet-3d-status",children:"正在唤醒小伙伴…"}),
@@ -11834,36 +11836,22 @@ function Pet3DViewer({pet:r}) {
 }
 
 function PetPage({user:r,onBack:u,flash:c}) {
-  const [view,setView]=p.useState("loading"),[pet,setPet]=p.useState(null),[error,setError]=p.useState(""),
-    [picked,setPicked]=p.useState(null),[name,setName]=p.useState(""),[busy,setBusy]=p.useState(!1),
-    [moodOpen,setMoodOpen]=p.useState(!1),[upgrade,setUpgrade]=p.useState(null),[bounce,setBounce]=p.useState(!1),
-    [broken,setBroken]=p.useState(new Set()),key=`moodtree-pet-mock-${r.id}`,
-    readMock=()=>{try{const x=JSON.parse(Te.getItem(key)||"null");if(x)return {...x,today_fed:x.fed_date===new Date().toISOString().slice(0,10)}}catch{}return null},
-    writeMock=x=>(Te.setItem(key,JSON.stringify(x)),x),
-    load=async()=>{setView("loading");setError("");try{const x=USE_PET_MOCK?(readMock()||{exists:!1}):await qe("/api/pets/get");if(x.error)throw Error(x.error);x.exists===!1?(setPet(null),setView("choose")):(setPet(x),setView("home"))}catch(x){setError(x.message||"宠物暂时走丢了");setView("error")}};
-  p.useEffect(()=>{load()},[r.id]);
-  const create=async()=>{
-      if(busy||!picked)return;const raw=Array.from(name.trim()).slice(0,8).join("");if(!raw)return c("给小伙伴取个名字吧");const clean=/[A-Za-z0-9\u3400-\u9fff]/.test(raw)?raw:picked.name;
-      setBusy(!0);try{let x;if(USE_PET_MOCK){if(readMock())throw Error("已拥有宠物");const demoExp=new URLSearchParams(location.search).get("petUpgradeDemo")==="1"?2:0,lv=petLevel(demoExp);x=writeMock({exists:!0,pet_type:picked.type,pet_name:clean,exp:demoExp,level:lv.level,level_name:lv.name,streak:0,today_fed:!1,last_mood:""})}else x=await pe("/api/pets/create",{pet_type:picked.type,pet_name:clean});
-        if(x.error||x.ok===!1)throw Error(x.error||"创建失败");setPet({...x,exists:!0});setView("home");setPicked(null);c(`${clean}来陪你啦`)
-      }catch(x){c(x.message||"创建失败，请重试")}setBusy(!1)
-    },
-    feed=async mood=>{
-      if(busy||pet.today_fed)return;setBusy(!0);try{let x;if(USE_PET_MOCK){const old=readMock()||pet,oldLv=petLevel(old.exp||0),exp=(old.exp||0)+1,lv=petLevel(exp);x=writeMock({...old,exists:!0,exp,level:lv.level,level_name:lv.name,streak:(old.streak||0)+1,today_fed:!0,fed_date:new Date().toISOString().slice(0,10),last_mood:mood,leveled_up:lv.level>oldLv.level})}else x=await pe("/api/pets/feed",{mood});
-        if(x.error||x.ok===!1)throw Error(x.error||"记录失败");const next={...pet,...x,today_fed:!0,last_mood:mood};setPet(next);setMoodOpen(!1);
-        if(x.leveled_up&&!sessionStorage.getItem(`pet-up-${r.id}-${next.level}`)){sessionStorage.setItem(`pet-up-${r.id}-${next.level}`,"1");setUpgrade(next)}c("今天的心情已经浇灌给树灵啦")
-      }catch(x){c(x.message||"记录失败，请重试")}setBusy(!1)
-    },
+  const [view,setView]=p.useState("loading"),[pets,setPets]=p.useState([]),[pet,setPet]=p.useState(null),[error,setError]=p.useState(""),[picked,setPicked]=p.useState(null),[name,setName]=p.useState(""),[busy,setBusy]=p.useState(!1),[moodOpen,setMoodOpen]=p.useState(!1),[upgrade,setUpgrade]=p.useState(null),[broken,setBroken]=p.useState(new Set()),[action,setAction]=p.useState(null),[reply,setReply]=p.useState("");
+  const normalize=x=>{const list=Array.isArray(x.pets)?x.pets:x.exists===!1?[]:[x],active=x.active_pet||list.find(q=>q.id===x.active_id)||list[0]||null;setPets(list);setPet(active);return {list,active}},
+    load=async()=>{setView("loading");setError("");try{const x=await qe("/api/pets/get");if(x.error)throw Error(x.error);const q=normalize(x);setView(q.list.length?"list":"choose")}catch(x){setError(x.message||"宠物暂时走丢了");setView("error")}},
     picture=(x,large=!1)=>broken.has(x.type)?n.jsx("div",{className:`pet-image-fallback ${large?"large":""}`,children:"🌱"}):n.jsx("img",{src:x.image,alt:x.name,onError:()=>setBroken(s=>new Set(s).add(x.type))});
+  p.useEffect(()=>{load()},[r.id]);
+  const create=async()=>{if(busy||!picked)return;const raw=Array.from(name.trim()).slice(0,8).join("");if(!raw)return c("给小伙伴取个名字吧");const clean=/[A-Za-z0-9\u3400-\u9fff]/.test(raw)?raw:picked.name;setBusy(!0);try{const x=await pe("/api/pets/create",{pet_type:picked.type,pet_name:clean,requestId:`${r.id}-${Date.now()}`});if(x.error||x.ok===!1)throw Error(x.error||"领养失败");const q=normalize(x);setPet(x.pet||q.active);setPicked(null);setView("detail");c(`${clean}来陪你啦`)}catch(x){c(x.message||"领养失败，请重试")}finally{setBusy(!1)}},
+    openPet=async x=>{setPet(x);setView("detail");try{await pe("/api/pets/select",{petId:x.id})}catch{}},
+    interact=async type=>{if(busy||!pet)return;setBusy(!0);const token=`${pet.id}-${type}-${Date.now()}`;setAction({id:token,type});try{const x=await pe("/api/pets/interact",{petId:pet.id,action:type,requestId:token});if(x.error||x.ok===!1)throw Error(x.error||"互动失败");x.pet&&setPet(s=>({...s,...x.pet}));setReply(x.reply||"");setTimeout(()=>setReply(""),2600)}catch(x){c(x.message||"互动失败，请重试")}finally{setBusy(!1)}},
+    feed=async mood=>{if(busy||!pet||pet.today_fed)return;setBusy(!0);try{const x=await pe("/api/pets/feed",{petId:pet.id,mood});if(x.error||x.ok===!1)throw Error(x.error||"记录失败");const next={...pet,...x,today_fed:!0,last_mood:mood};setPet(next);setPets(s=>s.map(q=>q.id===next.id?next:q));setMoodOpen(!1);setAction({id:Date.now(),type:"mood"});if(x.leveled_up&&!sessionStorage.getItem(`pet-up-${r.id}-${next.id}-${next.level}`)){sessionStorage.setItem(`pet-up-${r.id}-${next.id}-${next.level}`,"1");setUpgrade(next)}c(`今天的心情成长送给了${next.pet_name}`)}catch(x){c(x.message||"记录失败，请重试")}finally{setBusy(!1)}};
   if(view==="loading")return n.jsxs("div",{className:"pet-page pet-center",children:[n.jsx("div",{className:"pet-loader"}),n.jsx("p",{children:"正在寻找你的小伙伴…"})]});
   if(view==="error")return n.jsxs("div",{className:"pet-page pet-center",children:[n.jsx("div",{className:"pet-empty-icon",children:"🌱"}),n.jsx("p",{children:error}),n.jsx("button",{className:"pet-primary",onClick:load,children:"重新试试"}),n.jsx("button",{className:"pet-link",onClick:u,children:"返回"})]});
-  const header=n.jsxs("header",{className:"pet-header",children:[n.jsx("button",{onClick:u,"aria-label":"返回",children:"←"}),n.jsxs("div",{children:[n.jsx("h2",{children:view==="choose"?"选择你的小树灵":"我的宠物"}),n.jsx("p",{children:view==="choose"?"它会陪着每一次心情慢慢长大":"记录心情，就是给陪伴浇水"})]})]});
-  if(view==="choose")return n.jsxs("div",{className:"pet-page",children:[header,n.jsx("div",{className:"pet-grid",children:PET_CATALOG.map(x=>n.jsxs("button",{className:"pet-choice",onClick:()=>{setPicked(x);setName(x.name)},children:[picture(x),n.jsx("span",{children:x.name})]},x.type))}),picked&&n.jsx("div",{className:"pet-modal-mask",onClick:e=>e.target===e.currentTarget&&!busy&&setPicked(null),children:n.jsxs("div",{className:"pet-modal",children:[picture(picked,!0),n.jsx("h3",{children:"给它取个名字"}),n.jsx("input",{value:name,maxLength:8,onChange:e=>setName(Array.from(e.target.value).slice(0,8).join("")),placeholder:picked.name,autoFocus:!0}),n.jsxs("small",{children:[Array.from(name).length,"/8"]}),n.jsxs("div",{className:"pet-modal-actions",children:[n.jsx("button",{className:"pet-secondary",disabled:busy,onClick:()=>setPicked(null),children:"再看看"}),n.jsx("button",{className:"pet-primary",disabled:busy||!name.trim(),onClick:create,children:busy?"正在迎接…":"确认选择"})]})]})})]});
-  const catalog=PET_CATALOG.find(x=>x.type===pet.pet_type)||PET_CATALOG[19],lv=petLevel(Number(pet.exp)||0),max=lv.level===5,ratio=max?1:Math.max(0,Math.min(1,((pet.exp||0)-lv.min)/(lv.next-lv.min))),within=max?`${pet.exp}/∞`:`${(pet.exp||0)-lv.min}/${lv.next-lv.min}`,
-    words=!pet.today_fed?`${pet.pet_name}在等你回来记录今天的心情`:pet.last_mood==="happy"?`${pet.pet_name}今天元气满满地晃来晃去`:pet.last_mood==="sad"?`${pet.pet_name}依偎过来轻轻蹭蹭你`:`${pet.pet_name}安静地陪在你身边`;
-  return n.jsxs("div",{className:"pet-page pet-home",children:[header,n.jsx("button",{className:`pet-hero ${bounce?"bounce":""}`,onClick:()=>{setBounce(!0);setTimeout(()=>setBounce(!1),520)},children:[n.jsx(Pet3DViewer,{pet:catalog}),pet.today_fed&&pet.last_mood?n.jsx("span",{className:"pet-mood-badge",title:"今日心情",children:pet.last_mood==="happy"?"☀":pet.last_mood==="sad"?"☂":pet.last_mood==="tired"?"☁":"◌"}):null]}),n.jsx("h1",{children:pet.pet_name}),n.jsxs("div",{className:"pet-level-line",children:[n.jsx("b",{children:`Lv${lv.level} ${pet.level_name||lv.name}`}),n.jsx("span",{children:within})]}),n.jsx("div",{className:"pet-progress",children:n.jsx("i",{style:{transform:`scaleX(${ratio})`}})}),n.jsxs("div",{className:"pet-streak",children:["☀ ",n.jsxs("b",{children:["已连续陪伴 ",pet.streak||0," 天"]})]}),n.jsx("p",{className:"pet-status",children:words}),n.jsx("button",{className:`pet-feed ${pet.today_fed?"done":""}`,disabled:pet.today_fed||busy,onClick:()=>setMoodOpen(!0),children:pet.today_fed?"今天已经喂过啦 ✓":busy?"正在记录…":"记录今日心情"}),
-    moodOpen&&n.jsx("div",{className:"pet-modal-mask",onClick:e=>e.target===e.currentTarget&&!busy&&setMoodOpen(!1),children:n.jsxs("div",{className:"pet-modal pet-mood-modal",children:[n.jsx("h3",{children:"今天是什么心情？"}),n.jsx("p",{children:"选一个最接近的就好"}),n.jsx("div",{className:"pet-mood-grid",children:[["happy","开心","☀"],["calm","平静","◌"],["sad","难过","☂"],["tired","疲惫","☁"]].map(([v,l,i])=>n.jsxs("button",{disabled:busy,onClick:()=>feed(v),children:[n.jsx("span",{children:i}),l]},v))}),n.jsx("button",{className:"pet-link",disabled:busy,onClick:()=>setMoodOpen(!1),children:"稍后再说"})]})}),
-    upgrade&&n.jsx("div",{className:"pet-upgrade-mask",onClick:()=>setUpgrade(null),children:n.jsxs("div",{className:"pet-upgrade",children:[n.jsx("div",{className:"pet-confetti","aria-hidden":!0,children:Array.from({length:12}).map((x,i)=>n.jsx("i",{style:{left:`${5+i*8}%`,animationDelay:`${(i%6)*0.18}s`,background:["#ffd76e","#7fa68d","#f5a3b5","#9ec6e0"][i%4]}}))}),n.jsx("span",{children:"✨"}),n.jsxs("h2",{children:[upgrade.pet_name,"升级啦！"]}),n.jsxs("p",{children:["Lv",upgrade.level," ",upgrade.level_name]}),n.jsx("button",{className:"pet-primary",onClick:()=>setUpgrade(null),children:"继续陪伴"})]})})]});
+  const back=()=>view==="detail"||view==="choose"&&pets.length?setView("list"):u(),title=view==="choose"?"领养新宠物":view==="detail"?(pet==null?void 0:pet.pet_name)||"宠物详情":"我的宠物",header=n.jsxs("header",{className:"pet-header",children:[n.jsx("button",{onClick:back,"aria-label":"返回",children:"←"}),n.jsxs("div",{children:[n.jsx("h2",{children:title}),n.jsx("p",{children:view==="list"?"每一位小伙伴都有自己的成长记录":"温柔陪伴，不因错过而惩罚"})]})]});
+  if(view==="list")return n.jsxs("div",{className:"pet-page",children:[header,pets.length?n.jsx("div",{className:"pet-owned-grid",children:pets.map(x=>{const q=PET_CATALOG.find(y=>y.type===x.pet_type)||PET_CATALOG[19];return n.jsxs("button",{className:`pet-owned-card ${pet&&pet.id===x.id?"active":""}`,onClick:()=>openPet(x),children:[picture(q),n.jsxs("span",{children:[n.jsx("b",{children:x.pet_name}),n.jsx("small",{children:`Lv${x.level||petLevel(x.exp||0).level} · ${x.level_name||petLevel(x.exp||0).name}`})]})]},x.id)})}):n.jsxs("div",{className:"pet-empty-state",children:[n.jsx("span",{children:"🐾"}),n.jsx("h3",{children:"还没有小伙伴"}),n.jsx("p",{children:"领养一只树灵，让心情记录多一份陪伴。"})]}),n.jsx("button",{className:"pet-primary pet-adopt-more",onClick:()=>setView("choose"),children:"＋ 领养新宠物"})]});
+  if(view==="choose")return n.jsxs("div",{className:"pet-page",children:[header,n.jsx("p",{className:"pet-choice-note",children:"同一种小伙伴也可以再次领养，每一只都会独立成长。"}),n.jsx("div",{className:"pet-grid",children:PET_CATALOG.map(x=>{const count=pets.filter(q=>q.pet_type===x.type).length;return n.jsxs("button",{className:"pet-choice",onClick:()=>{setPicked(x);setName(x.name)},children:[picture(x),n.jsx("span",{children:x.name}),count>0&&n.jsxs("small",{children:["已领养 ",count," 只"]})]},x.type)})}),picked&&n.jsx("div",{className:"pet-modal-mask",onClick:e=>e.target===e.currentTarget&&!busy&&setPicked(null),children:n.jsxs("div",{className:"pet-modal",children:[picture(picked,!0),n.jsx("h3",{children:"给它取个名字"}),n.jsx("input",{value:name,maxLength:8,onChange:e=>setName(Array.from(e.target.value).slice(0,8).join("")),placeholder:picked.name,autoFocus:!0}),n.jsxs("small",{children:[Array.from(name).length,"/8"]}),n.jsxs("div",{className:"pet-modal-actions",children:[n.jsx("button",{className:"pet-secondary",disabled:busy,onClick:()=>setPicked(null),children:"再看看"}),n.jsx("button",{className:"pet-primary",disabled:busy||!name.trim(),onClick:create,children:busy?"正在迎接…":"确认领养"})]})]})})]});
+  const catalog=PET_CATALOG.find(x=>x.type===(pet==null?void 0:pet.pet_type))||PET_CATALOG[19],lv=petLevel(Number((pet==null?void 0:pet.exp)||0)),max=lv.level===5,ratio=max?1:Math.max(0,Math.min(1,((pet.exp||0)-lv.min)/(lv.next-lv.min))),within=max?`${pet.exp}/∞`:`${(pet.exp||0)-lv.min}/${lv.next-lv.min}`,words=!pet.today_fed?`${pet.pet_name}在等你回来记录今天的心情`:pet.last_mood==="happy"?`${pet.pet_name}今天元气满满地晃来晃去`:pet.last_mood==="sad"?`${pet.pet_name}依偎过来轻轻蹭蹭你`:`${pet.pet_name}安静地陪在你身边`;
+  return n.jsxs("div",{className:"pet-page pet-home",children:[header,n.jsx("div",{className:"pet-hero",children:[n.jsx(Pet3DViewer,{pet:catalog,action,onTap:()=>interact("pet")}),pet.today_fed&&pet.last_mood?n.jsx("span",{className:"pet-mood-badge",title:"今日心情",children:pet.last_mood==="happy"?"☀":pet.last_mood==="sad"?"☂":pet.last_mood==="tired"?"☁":"◌"}):null]}),reply&&n.jsx("div",{className:"pet-reply","aria-live":"polite",children:reply}),n.jsx("h1",{children:pet.pet_name}),n.jsxs("div",{className:"pet-level-line",children:[n.jsx("b",{children:`Lv${lv.level} ${pet.level_name||lv.name}`}),n.jsx("span",{children:within})]}),n.jsx("div",{className:"pet-progress",children:n.jsx("i",{style:{transform:`scaleX(${ratio})`}})}),n.jsxs("div",{className:"pet-streak",children:["☀ ",n.jsxs("b",{children:["已连续陪伴 ",pet.streak||0," 天"]})]}),n.jsx("p",{className:"pet-status",children:words}),n.jsx("div",{className:"pet-interactions",children:[["pet","抚摸","♡"],["feed","喂食","◉"],["play","玩耍","✦"]].map(([v,l,i])=>n.jsxs("button",{disabled:busy,onClick:()=>interact(v),children:[n.jsx("span",{children:i}),l]},v))}),n.jsx("p",{className:"pet-reward-note",children:"今日心情成长会送给当前陪伴的宠物"}),n.jsx("button",{className:`pet-feed ${pet.today_fed?"done":""}`,disabled:pet.today_fed||busy,onClick:()=>setMoodOpen(!0),children:pet.today_fed?"今天已经记录过啦 ✓":busy?"正在记录…":"记录今日心情"}),moodOpen&&n.jsx("div",{className:"pet-modal-mask",onClick:e=>e.target===e.currentTarget&&!busy&&setMoodOpen(!1),children:n.jsxs("div",{className:"pet-modal pet-mood-modal",children:[n.jsx("h3",{children:"今天是什么心情？"}),n.jsx("p",{children:`这次成长会送给${pet.pet_name}`}),n.jsx("div",{className:"pet-mood-grid",children:[["happy","开心","☀"],["calm","平静","◌"],["sad","难过","☂"],["tired","疲惫","☁"]].map(([v,l,i])=>n.jsxs("button",{disabled:busy,onClick:()=>feed(v),children:[n.jsx("span",{children:i}),l]},v))}),n.jsx("button",{className:"pet-link",disabled:busy,onClick:()=>setMoodOpen(!1),children:"稍后再说"})]})}),upgrade&&n.jsx("div",{className:"pet-upgrade-mask",onClick:()=>setUpgrade(null),children:n.jsxs("div",{className:"pet-upgrade",children:[n.jsx("div",{className:"pet-confetti","aria-hidden":!0,children:Array.from({length:12}).map((x,i)=>n.jsx("i",{style:{left:`${5+i*8}%`,animationDelay:`${(i%6)*0.18}s`,background:["#ffd76e","#7fa68d","#f5a3b5","#9ec6e0"][i%4]}}))}),n.jsx("span",{children:"✨"}),n.jsxs("h2",{children:[upgrade.pet_name,"升级啦！"]}),n.jsxs("p",{children:["Lv",upgrade.level," ",upgrade.level_name]}),n.jsx("button",{className:"pet-primary",onClick:()=>setUpgrade(null),children:"继续陪伴"})]})})]});
 }
 
 function Uv() {
@@ -11912,6 +11900,7 @@ function Uv() {
     [yt, fa] = p.useState(!1),
     [we, st] = p.useState(null),
     [Mt, zt] = p.useState(0),
+    [chatMutedUnread, setChatMutedUnread] = p.useState(0),
     [$e, jt] = p.useState(null),
     [xa, We] = p.useState(null),
     [selectionAi, setSelectionAi] = p.useState(null),
@@ -12152,12 +12141,18 @@ function Uv() {
       }
       const M = () => {
         qe(`/api/chat/unread?userId=${k.id}`)
-          .then((oe) => zt(oe.total || 0))
+          .then((oe) => {
+            let muted=0;
+            Object.entries(oe.dm||{}).forEach(([id,count])=>{const target=[k.id,id].sort().join("_");Te.getItem(`moodtree-mute-dm-${target}`)==="1"&&(muted+=Number(count)||0)});
+            Object.entries(oe.rooms||{}).forEach(([id,count])=>{Te.getItem(`moodtree-mute-room-${id}`)==="1"&&(muted+=Number(count)||0)});
+            zt(Math.max(0,(oe.total||0)-muted));setChatMutedUnread(muted)
+          })
           .catch(() => {});
       };
       M();
-      const Q = setInterval(M, 1e4);
-      return () => clearInterval(Q);
+      const Q = setInterval(M, 5e3),oe=()=>document.visibilityState==="visible"&&M();
+      window.addEventListener("focus",oe);document.addEventListener("visibilitychange",oe);
+      return () => {clearInterval(Q);window.removeEventListener("focus",oe);document.removeEventListener("visibilitychange",oe)};
     }, [k]));
   const Vt = async () => {
       if (k) {
@@ -12307,7 +12302,7 @@ function Uv() {
               "aria-label": "主导航",
               children: [
                 n.jsx("button", { className: r === "home" ? "active" : "", onClick: () => U("home"), children: "首页" }),
-                n.jsx("button", { className: r === "chat" ? "active" : "", onClick: () => ve("chat"), children: "聊天" }),
+                n.jsxs("button", { className: `nav-chat-button ${r === "chat" ? "active" : ""}`, onClick: () => ve("chat"), children: ["聊天",Mt>0?n.jsx("span",{className:"nav-unread-badge","aria-label":`${Mt}条未读消息`,children:Mt>99?"99+":Mt}):chatMutedUnread>0?n.jsx("span",{className:"nav-unread-dot","aria-label":"免打扰会话有未读消息"}):null] }),
                 n.jsx("button", { className: r === "publish" ? "active" : "", onClick: () => ve("publish"), children: "写一写" }),
                 n.jsx("button", { className: r === "rooms" ? "active" : "", onClick: () => ve("rooms"), children: "房间" }),
                 n.jsx("button", { className: r === "pet" ? "active" : "", onClick: () => ve("pet"), children: "我的宠物" }),
@@ -12451,7 +12446,7 @@ function Uv() {
           n.jsxs("button", {
             className: r === "chat" ? "active" : "",
             onClick: () => ve("chat"),
-            children: [n.jsx(Rl, { children: "⊡" }), n.jsx("span", { children: "聊天" }), Mt > 0 && n.jsx("span", { className: "nav-unread-badge", children: Mt > 99 ? "99+" : Mt })],
+            children: [n.jsx(Rl, { children: "⊡" }), n.jsx("span", { children: "聊天" }), Mt > 0 ? n.jsx("span", { className: "nav-unread-badge", "aria-label":`${Mt}条未读消息`, children: Mt > 99 ? "99+" : Mt }) : chatMutedUnread>0?n.jsx("span",{className:"nav-unread-dot","aria-label":"免打扰会话有未读消息"}):null],
           }),
           n.jsxs("button", { className: "write-btn", onClick: () => ve("publish"), children: [n.jsx(Rl, { children: "＋" }), n.jsx("span", { children: "写" })] }),
           n.jsxs("button", { className: r === "rooms" ? "active" : "", onClick: () => ve("rooms"), children: [n.jsx(Rl, { children: "◇" }), n.jsx("span", { children: "房间" })] }),
@@ -17051,6 +17046,7 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
     [rpH, setRpH] = p.useState(0),
     [rpM, setRpM] = p.useState(0),
     [remindBanner, setRemindBanner] = p.useState(null),
+    [newUnread,setNewUnread] = p.useState(0),
     rpWheelD = p.useRef(null),
     rpWheelH = p.useRef(null),
     rpWheelM = p.useRef(null),
@@ -17167,12 +17163,13 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
               CHAT_MESSAGE_CACHE.set(chatCacheKey, next);
               return next;
             }),
-            Te.getItem("moodtree-read-receipts") !== "off" && pe("/api/chat/read", { userId: r.id, type: u, target: o }).catch(() => {}),
             ce.some((aa) => aa.from !== r.id))
           )
             try {
               (z = navigator.vibrate) == null || z.call(navigator, 50);
             } catch {}
+          const incoming=ce.filter(aa=>aa.from!==r.id).length;
+          if(incoming){if(document.visibilityState==="visible"&&stickToBottomRef.current){Te.getItem("moodtree-read-receipts")!=="off"&&pe("/api/chat/read",{userId:r.id,type:u,target:o}).catch(()=>{});setNewUnread(0)}else setNewUnread(q=>q+incoming)}
           X(!1);
         } catch {
           X(!1);
@@ -17197,7 +17194,6 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
     p.useEffect(
       () => (
         Wt(),
-        Te.getItem("moodtree-read-receipts") !== "off" && pe("/api/chat/read", { userId: r.id, type: u, target: o }).catch(() => {}),
         St || (Jt.current = window.setInterval(Wt, 3e3)),
         () => {
           Jt.current && clearInterval(Jt.current);
@@ -17786,6 +17782,7 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
         onScroll: (event) => {
           const el = event.currentTarget;
           stickToBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+          if(stickToBottomRef.current&&document.visibilityState==="visible"&&newUnread){setNewUnread(0);Te.getItem("moodtree-read-receipts")!=="off"&&pe("/api/chat/read",{userId:r.id,type:u,target:o}).catch(()=>{})}
         },
         style: Ue ? (Ue.startsWith("linear-gradient") ? { background: Ue } : { backgroundImage: `url(${Ue})`, backgroundSize: "cover", backgroundPosition: "center", backgroundRepeat: "no-repeat" }) : void 0,
         onClick: () => {
@@ -17799,14 +17796,14 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
               : C.map((z, msgIndex) => {
                   const previous = C[msgIndex - 1], separated = !previous || (z.timestamp || 0) - (previous.timestamp || 0) > 300;
                   if (z.recalled) return n.jsxs(n.Fragment, { children: [
-                    separated && n.jsx("div", { className: "chat-time-divider", children: (() => { const d = z.timestamp ? new Date(z.timestamp * 1000) : (z.time ? new Date(z.time) : new Date(NaN)); if (isNaN(d.getTime())) return z.time ? String(z.time).slice(11) : ""; const hm = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; const mid = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime(); const dd = Math.floor((mid(new Date()) - mid(d)) / 864e5); return dd <= 0 ? hm : dd === 1 ? `昨天 ${hm}` : dd < 7 ? `周${"日一二三四五六"[d.getDay()]} ${hm}` : `${d.getMonth() + 1}月${d.getDate()}日 ${hm}`; })() }),
+                    separated && n.jsx("div", { className: "chat-time-divider", children: (() => { const time = new Date((z.timestamp || 0) * 1000); return `${String(time.getHours()).padStart(2,"0")}:${String(time.getMinutes()).padStart(2,"0")}`; })() }),
                     n.jsxs("div", { className: "chat-system-message", "data-msg-id": z.id, children: [z.from === r.id ? "你" : (z.fromNickname || "对方"), "撤回了一条消息"] })
                   ] }, z.id);
                   return n.jsxs(n.Fragment, { children: [
                     separated && n.jsx("div", { className: "chat-time-divider", children: (() => { const d = z.timestamp ? new Date(z.timestamp * 1000) : new Date(z.time); if (isNaN(d.getTime())) return z.time.slice(11); const hm = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; const mid = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime(); const dd = Math.floor((mid(new Date()) - mid(d)) / 864e5); return dd <= 0 ? hm : dd === 1 ? `昨天 ${hm}` : dd < 7 ? `周${"日一二三四五六"[d.getDay()]} ${hm}` : `${d.getMonth() + 1}月${d.getDate()}日 ${hm}`; })() }),
                     n.jsxs("div", {
                       "data-msg-id": z.id,
-                      className: `chat-msg ${z.from === r.id ? "mine" : "other"} ${previous && previous.from === z.from && !previous.recalled && !separated ? "chat-msg-grouped" : ""}`,
+                      className: `chat-msg ${z.from === r.id ? "mine" : "other"} ${previous && previous.from === z.from && !separated ? "chat-msg-grouped" : ""}`,
                       onTouchStart: () => !multiSelect && startMessagePress(z),
                       onTouchEnd: cancelMessagePress,
                       onTouchMove: cancelMessagePress,
@@ -17836,6 +17833,7 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
                     }),
                   ] }, z.id);
                 }),
+          newUnread>0&&n.jsxs("button",{className:"chat-new-message",onClick:()=>{stickToBottomRef.current=!0;Kt.current&&Kt.current.scrollIntoView({behavior:"smooth",block:"end"});setNewUnread(0);document.visibilityState==="visible"&&pe("/api/chat/read",{userId:r.id,type:u,target:o}).catch(()=>{})},children:[newUnread," 条新消息 ↓"]}),
           n.jsx("div", { ref: Kt }),
         ],
       }),
@@ -17848,7 +17846,7 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
         ["引用", () => quoteMessage(actionMsg)],
         ["提醒", () => openRemindPicker()],
         ["搜一搜", () => searchMessage(actionMsg)],
-                        ["选择文字", () => selectMessageText(actionMsg)],
+        ["选择文字", () => selectMessageText(actionMsg)],
       ].map(([z, te]) => n.jsx("button", { type: "button", onClick: te, children: z }, z)) }) }) }),
       remindMsg && n.jsx("div", {
         className: "bd-picker-mask", onClick: () => setRemindMsg(null),
@@ -18218,15 +18216,8 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
       _ &&
         n.jsxs("div", {
           className: "quote-preview",
-          children: [n.jsxs("div", { className: "quote-preview-text", children: ["回复 ", _.from === r.id ? "我" : (_.fromNickname || "对方"), ": ", _.content.slice(0, 40)] }), n.jsx("button", { className: "quote-preview-close", onClick: () => ee(null), children: "✕" })],
+          children: [n.jsxs("div", { className: "quote-preview-text", children: ["回复 ", _.fromNickname, ": ", _.content.slice(0, 40)] }), n.jsx("button", { className: "quote-preview-close", onClick: () => ee(null), children: "✕" })],
         }),
-      multiSelect && n.jsxs("div", { className: "multi-select-bar", children: [
-        n.jsx("span", { style: { fontSize: 13, color: "#59655e" }, children: `已选 ${selectedMessages.size} 条` }),
-        n.jsxs("div", { style: { display: "flex", alignItems: "center" }, children: [
-          n.jsx("button", { onClick: () => { setMultiSelect(!1); setSelectedMessages(new Set()); }, style: { background: "#f2f3f2", color: "#5a635d" }, children: "取消" }),
-          n.jsx("button", { onClick: deleteSelectedMessages, style: { background: "var(--sage-dark)", color: "#fff" }, children: "删除" })
-        ] })
-      ] }),
       be && n.jsx(bp, { images: [be], startIndex: 0, onClose: () => w(null), flash: d }),
       St &&
         n.jsx("div", {
