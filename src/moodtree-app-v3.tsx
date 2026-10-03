@@ -1,4 +1,3 @@
-import AI_AVATAR_96 from "../ai-avatar-96.png";
 import PET_01 from "../pets-256/01-橘猫.webp";
 import PET_02 from "../pets-256/02-柴犬.webp";
 import PET_03 from "../pets-256/03-白兔.webp";
@@ -10992,7 +10991,7 @@ const Mu = ["学业", "感情", "家庭", "工作", "生活", "其他"],
   sp = { 我只想发泄: "听你说就好", 我希望有人安慰: "给我一点温暖", 我希望有人给建议: "帮我想想办法", 我希望有人陪我聊天: "陪我待一会儿" },
   zv = [
     { value: "public", label: "公开", desc: "大家能看到并回应", icon: "🌍" },
-    { value: "ai-only", label: "AI陪伴", desc: "只有AI回应你", icon: "🤖" },
+    { value: "ai-only", label: "AI陪伴", desc: "只有AI回应你", icon: "ai-sprout" },
     { value: "private", label: "仅自己", desc: "只有你能看到", icon: "🔒" },
   ],
   Ev = [
@@ -12928,7 +12927,7 @@ function qm({ post: r, featured: u, open: o, react: c, user: m, onRequireLogin: 
         children: [n.jsx("h3", { children: r.title }), n.jsx("p", { children: r.content })],
       }),
       n.jsxs("div", { className: "need-pill", children: [n.jsx("span", { children: "◌" }), sp[r.need]] }),
-      r.visibility !== "public" && n.jsx("div", { style: { fontSize: "9px", color: "#9ba19d", marginTop: "8px" }, children: r.visibility === "ai-only" ? "🤖 仅AI陪伴" : r.visibility === "room" ? "◈ 房间内可见" : "🔒 仅自己可见" }),
+      r.visibility !== "public" && n.jsx("div", { className: "post-visibility-label", style: { fontSize: "9px", color: "#9ba19d", marginTop: "8px" }, children: r.visibility === "ai-only" ? n.jsxs(n.Fragment,{children:[n.jsx(AiSproutIcon,{size:18,className:"inline-ai-icon"}),"仅AI陪伴"]}) : r.visibility === "room" ? "◈ 房间内可见" : "🔒 仅自己可见" }),
       n.jsxs("div", {
         className: "post-actions",
         onClick: (D) => D.stopPropagation(),
@@ -13980,7 +13979,7 @@ function Xv({ onCancel: r, onPublish: u, user: o, publishRoomId: c, flash: m }) 
                   children: zv.map((O) =>
                     n.jsxs(
                       "button",
-                      { type: "button", className: X === O.value ? "chosen" : "", onClick: () => J(O.value), children: [n.jsx("span", { children: O.icon }), n.jsx("b", { children: O.label }), n.jsx("small", { children: O.desc })] },
+                      { type: "button", className: X === O.value ? "chosen" : "", onClick: () => J(O.value), children: [n.jsx("span", { children: O.icon === "ai-sprout" ? n.jsx(AiSproutIcon, { size: 28, className: "visibility-ai-icon" }) : O.icon }), n.jsx("b", { children: O.label }), n.jsx("small", { children: O.desc })] },
                       O.value,
                     ),
                   ),
@@ -14404,7 +14403,7 @@ function Gv({ post: r, onBack: u, react: o, update: c, user: m, onStartDM: d, fl
                 children:
                   ".ai-chat-messages{max-height:400px;overflow-y:auto;padding:12px 16px;display:flex;flex-direction:column;gap:10px}.ai-msg{display:flex;align-items:flex-start;gap:8px;max-width:85%}.ai-msg-user{align-self:flex-end;flex-direction:row-reverse}.ai-msg-avatar{font-size:20px;flex-shrink:0}.ai-msg-text{padding:8px 14px;border-radius:14px;font-size:14px;line-height:1.6;word-break:break-word}.ai-msg-user .ai-msg-text{background:var(--sage-dark,#6f917d);color:#fff;border-bottom-right-radius:4px}.ai-msg-ai .ai-msg-text{background:var(--sage-soft,#e8f0ea);color:#333;border-bottom-left-radius:4px}.ai-typing{color:#999;font-style:italic}",
               }),
-              n.jsxs("div", { className: "ai-chat-head", children: [n.jsx("div", { className: "ai-avatar", children: n.jsx("img", { src: AI_AVATAR_96, alt: "MoodTree AI" }) }), n.jsxs("div", { children: [n.jsx("h2", { children: "AI 陪伴" }), n.jsx("small", { children: "你的专属AI倾听者" })] })] }),
+              n.jsxs("div", { className: "ai-chat-head", children: [n.jsx(AiSproutIcon, { size: 40, className: "ai-avatar ai-sprout-square" }), n.jsxs("div", { children: [n.jsx("h2", { children: "AI 陪伴" }), n.jsx("small", { children: "你的专属AI倾听者" })] })] }),
               n.jsxs("div", {
                 className: "ai-chat-messages",
                 children: [
@@ -14413,12 +14412,12 @@ function Gv({ post: r, onBack: u, react: o, update: c, user: m, onStartDM: d, fl
                       "div",
                       {
                         className: `ai-msg ${se.role === "user" ? "ai-msg-user" : "ai-msg-ai"}`,
-                        children: [se.role === "ai" && n.jsx("span", { className: "ai-msg-avatar", children: "🤖" }), n.jsx("span", { className: "ai-msg-text", children: se.text })],
+                        children: [se.role === "ai" && n.jsx(AiSproutIcon, { size: 34, className: "ai-msg-avatar" }), n.jsx("span", { className: "ai-msg-text", children: se.text })],
                       },
                       ge,
                     ),
                   ),
-                  Oe && n.jsxs("div", { className: "ai-msg ai-msg-ai", children: [n.jsx("span", { className: "ai-msg-avatar", children: "🤖" }), n.jsx("span", { className: "ai-msg-text ai-typing", children: "正在思考…" })] }),
+                  Oe && n.jsxs("div", { className: "ai-msg ai-msg-ai", children: [n.jsx(AiSproutIcon, { size: 34, className: "ai-msg-avatar" }), n.jsx("span", { className: "ai-msg-text ai-typing", children: "正在思考…" })] }),
                 ],
               }),
               n.jsxs("div", {
@@ -15102,7 +15101,7 @@ function Qv({ user: r, onStartDM: u, onOpenRoom: o, flash: c, onUnreadUpdate: m,
                   onClick: () => Se(!0),
                   style: { cursor: "pointer" },
                   children: [
-                    n.jsx("div", { className: "chat-list-avatar", style: { background: "linear-gradient(135deg, #a8cbb4, #6f917d)", fontSize: "22px" }, children: "🤖" }),
+                    n.jsx(AiSproutIcon, { size: 44, className: "chat-list-avatar ai-sprout-square" }),
                     n.jsxs("div", { className: "chat-list-info", children: [n.jsx("b", { children: "AI 陪伴聊天" }), n.jsx("small", { children: "和AI聊聊心事，随时倾听你" })] }),
                     n.jsx("span", { style: { fontSize: "14px", color: "var(--muted)" }, children: "›" }),
                   ],
@@ -15287,6 +15286,31 @@ function AiUserAvatar({ user: r }) {
     return n.jsx("img", { src: r.avatar, alt: "我的头像", onError: () => setFailed(!0) });
   return n.jsx("span", { children: r && r.avatarType !== "image" && r.avatar ? r.avatar : "🌿" });
 }
+function AiSproutIcon({ size: r = 36, className: u = "", label: o = "MoodTree AI 陪伴" }) {
+  return n.jsx("span", {
+    className: `ai-sprout-icon ${u}`.trim(),
+    style: { width: r, height: r, flex: `0 0 ${r}px`, borderRadius: u.includes("square") ? 14 : "50%" },
+    role: "img",
+    "aria-label": o,
+    children: n.jsxs("svg", {
+      viewBox: "0 0 80 80",
+      fill: "none",
+      xmlns: "http://www.w3.org/2000/svg",
+      "aria-hidden": "true",
+      children: [
+        n.jsx("path", { d: "M40 22C37 12 29 8 21 10c1 9 8 15 19 14", fill: "#BFE0C4", stroke: "currentColor", strokeWidth: "3.2", strokeLinecap: "round", strokeLinejoin: "round" }),
+        n.jsx("path", { d: "M40 22c3-10 11-14 19-12-1 9-8 15-19 14", fill: "#D7EBCF", stroke: "currentColor", strokeWidth: "3.2", strokeLinecap: "round", strokeLinejoin: "round" }),
+        n.jsx("path", { d: "M40 24v8", stroke: "currentColor", strokeWidth: "3.2", strokeLinecap: "round" }),
+        n.jsx("path", { d: "M20 51c0-14 9-23 20-23s20 9 20 23c0 13-8 20-20 20S20 64 20 51Z", fill: "#FFFDF8", stroke: "currentColor", strokeWidth: "3.5", strokeLinejoin: "round" }),
+        n.jsx("path", { d: "M29 48c2.5 3 5 3 7.5 0M43.5 48c2.5 3 5 3 7.5 0", stroke: "currentColor", strokeWidth: "3", strokeLinecap: "round" }),
+        n.jsx("path", { d: "M35 58c3.2 3.5 6.8 3.5 10 0", stroke: "currentColor", strokeWidth: "3", strokeLinecap: "round" }),
+        n.jsx("ellipse", { cx: "27.5", cy: "56", rx: "4.5", ry: "2.8", fill: "#F3B8B8", opacity: ".85" }),
+        n.jsx("ellipse", { cx: "52.5", cy: "56", rx: "4.5", ry: "2.8", fill: "#F3B8B8", opacity: ".85" }),
+        n.jsx("path", { d: "M24 36c4-5 9-7 16-7s12 2 16 7", stroke: "#FFF", strokeWidth: "2", strokeLinecap: "round", opacity: ".55" }),
+      ],
+    }),
+  });
+}
 function Iv({ user: r, onBack: u, flash: o }) {
   const [c, m] = p.useState([{ role: "ai", text: "你好，我在这里。有什么想说的，都可以告诉我。不管是什么心情，我都会认真听。" }]),
     [d, h] = p.useState(""),
@@ -15346,7 +15370,7 @@ function Iv({ user: r, onBack: u, flash: o }) {
       n.jsx("div", { className: "ai-page-top-back", children: n.jsx("button", { className: "back-button", onClick: u, children: "←" }) }),
       n.jsxs("div", {
         className: "ai-page-header",
-        children: [n.jsx("img", { src: AI_AVATAR_96, alt: "MoodTree AI", className: "ai-page-header-avatar" }), n.jsxs("div", { children: [n.jsx("h2", { children: "AI 陪伴" }), n.jsx("small", { children: "温暖倾听 · 永远在你身边" })] })],
+        children: [n.jsx(AiSproutIcon, { size: 68, className: "ai-page-header-avatar ai-sprout-large" }), n.jsxs("div", { children: [n.jsx("h2", { children: "AI 陪伴" }), n.jsx("small", { children: "温暖倾听 · 永远在你身边" })] })],
       }),
       n.jsx("div", { className: "ai-page-header-divider" }),
       n.jsxs("div", {
@@ -15357,12 +15381,12 @@ function Iv({ user: r, onBack: u, flash: o }) {
               "div",
               {
                 className: `ai-page-msg ${T.role === "user" ? "ai-page-msg-user" : "ai-page-msg-ai"}`,
-                children: [n.jsx("div", { className: "ai-page-msg-avatar", children: T.role === "ai" ? n.jsx("img", { src: AI_AVATAR_96, alt: "MoodTree AI" }) : n.jsx(AiUserAvatar, { user: r }) }), n.jsx("div", { className: "ai-page-msg-text", children: T.text })],
+                children: [T.role === "ai" ? n.jsx(AiSproutIcon, { size: 38, className: "ai-page-msg-avatar" }) : n.jsx("div", { className: "ai-page-msg-avatar", children: n.jsx(AiUserAvatar, { user: r }) }), n.jsx("div", { className: "ai-page-msg-text", children: T.text })],
               },
               H,
             ),
           ),
-          v && n.jsxs("div", { className: "ai-page-msg ai-page-msg-ai", children: [n.jsx("div", { className: "ai-page-msg-avatar", children: n.jsx("img", { src: AI_AVATAR_96, alt: "MoodTree AI" }) }), n.jsx("div", { className: "ai-page-msg-text ai-page-typing", children: "正在思考…" })] }),
+          v && n.jsxs("div", { className: "ai-page-msg ai-page-msg-ai", children: [n.jsx(AiSproutIcon, { size: 38, className: "ai-page-msg-avatar" }), n.jsx("div", { className: "ai-page-msg-text ai-page-typing", children: "正在思考…" })] }),
           n.jsx("div", { ref: y }),
         ],
       }),
