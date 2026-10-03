@@ -11853,6 +11853,8 @@ function PetPage({user:r,onBack:u,flash:c}) {
   return n.jsxs("div",{className:"pet-page pet-home",children:[header,n.jsx("div",{className:"pet-hero",children:[n.jsx(Pet3DViewer,{pet:catalog,action,onTap:()=>interact("pet")}),pet.today_fed&&pet.last_mood?n.jsx("span",{className:"pet-mood-badge",title:"今日心情",children:pet.last_mood==="happy"?"☀":pet.last_mood==="sad"?"☂":pet.last_mood==="tired"?"☁":"◌"}):null]}),reply&&n.jsx("div",{className:"pet-reply","aria-live":"polite",children:reply}),n.jsx("h1",{children:pet.pet_name}),n.jsxs("div",{className:"pet-level-line",children:[n.jsx("b",{children:`Lv${lv.level} ${pet.level_name||lv.name}`}),n.jsx("span",{children:within})]}),n.jsx("div",{className:"pet-progress",children:n.jsx("i",{style:{transform:`scaleX(${ratio})`}})}),n.jsxs("div",{className:"pet-streak",children:["☀ ",n.jsxs("b",{children:["已连续陪伴 ",pet.streak||0," 天"]})]}),n.jsx("p",{className:"pet-status",children:words}),n.jsx("div",{className:"pet-interactions",children:[["pet","抚摸","♡"],["feed","喂食","◉"],["play","玩耍","✦"]].map(([v,l,i])=>n.jsxs("button",{disabled:busy,onClick:()=>interact(v),children:[n.jsx("span",{children:i}),l]},v))}),n.jsx("p",{className:"pet-reward-note",children:"今日心情成长会送给当前陪伴的宠物"}),n.jsx("button",{className:`pet-feed ${pet.today_fed?"done":""}`,disabled:pet.today_fed||busy,onClick:()=>setMoodOpen(!0),children:pet.today_fed?"今天已经记录过啦 ✓":busy?"正在记录…":"记录今日心情"}),moodOpen&&n.jsx("div",{className:"pet-modal-mask",onClick:e=>e.target===e.currentTarget&&!busy&&setMoodOpen(!1),children:n.jsxs("div",{className:"pet-modal pet-mood-modal",children:[n.jsx("h3",{children:"今天是什么心情？"}),n.jsx("p",{children:`这次成长会送给${pet.pet_name}`}),n.jsx("div",{className:"pet-mood-grid",children:[["happy","开心","☀"],["calm","平静","◌"],["sad","难过","☂"],["tired","疲惫","☁"]].map(([v,l,i])=>n.jsxs("button",{disabled:busy,onClick:()=>feed(v),children:[n.jsx("span",{children:i}),l]},v))}),n.jsx("button",{className:"pet-link",disabled:busy,onClick:()=>setMoodOpen(!1),children:"稍后再说"})]})}),upgrade&&n.jsx("div",{className:"pet-upgrade-mask",onClick:()=>setUpgrade(null),children:n.jsxs("div",{className:"pet-upgrade",children:[n.jsx("div",{className:"pet-confetti","aria-hidden":!0,children:Array.from({length:12}).map((x,i)=>n.jsx("i",{style:{left:`${5+i*8}%`,animationDelay:`${(i%6)*0.18}s`,background:["#ffd76e","#7fa68d","#f5a3b5","#9ec6e0"][i%4]}}))}),n.jsx("span",{children:"✨"}),n.jsxs("h2",{children:[upgrade.pet_name,"升级啦！"]}),n.jsxs("p",{children:["Lv",upgrade.level," ",upgrade.level_name]}),n.jsx("button",{className:"pet-primary",onClick:()=>setUpgrade(null),children:"继续陪伴"})]})})]});
 }
 
+const NATIVE_SELECTION_ONLY = true;
+
 function Uv() {
   const [r, u] = p.useState("home"),
     [o, c] = p.useState([]),
@@ -11942,6 +11944,7 @@ function Uv() {
     } catch {}
   };
   (p.useEffect(() => {
+    if (NATIVE_SELECTION_ONLY) return;
     let M = null;
     const Q = () => {
       try {
@@ -12562,7 +12565,8 @@ function Uv() {
             onAvatarClick: Pe,
           }),
         }),
-      $e &&
+      !NATIVE_SELECTION_ONLY &&
+        $e &&
         n.jsxs(n.Fragment, {
           children: [
             n.jsx("div", { className: "selection-menu-backdrop", onPointerDown: Ya }),
@@ -12609,9 +12613,9 @@ function Uv() {
               n.jsx("div", { className: `translation-panel-content${xa.loading ? " is-loading" : ""}`, children: xa.text }),
               n.jsx(TranslationLanguagePicker, { value: xa.target, disabled: xa.loading, onSelect: async (M) => { We((Q) => ({ ...Q, loading: !0, target: M })); const Q = await Au(xa.sourceText, 500, M); We({ text: Q.translated, target: Q.target, sourceText: xa.sourceText, loading: !1 }); } }),
               n.jsx("div", {
-                className: "friend-action-list",
+                className: "translation-actions",
                 children: [              n.jsxs("button", {
-                className: "msg-action-item",
+                className: "translation-action-btn",
                 onClick: () => {
                   const el = document.querySelector(".translation-panel .translation-panel-content");
                   if (el) {
@@ -12641,6 +12645,7 @@ function Uv() {
                 ],
               }),
 n.jsxs("button", {
+                  className: "translation-action-btn",
                   onClick: async () => {
                     try {
                       (await Wi(xa.text), me("已复制译文"));
@@ -12651,7 +12656,7 @@ n.jsxs("button", {
                   children: "复制译文",
                 }),
               ]}),
-              n.jsx("button", { className: "friend-action-cancel", onClick: () => We(null), children: "关闭" }),
+              n.jsx("button", { className: "translation-action-btn translation-close-btn", onClick: () => We(null), children: "关闭" }),
             ],
           }),
         }),
@@ -14337,7 +14342,7 @@ function Gv({ post: r, onBack: u, react: o, update: c, user: m, onStartDM: d, fl
               }),
             ],
           }),
-          n.jsxs("div", { className: "detail-copy", ...ha, onTouchEnd: () => { ha.onTouchEnd?.(); _checkSelAfterTouch(); }, onContextMenu: (se) => se.preventDefault(), onMouseUp: $t, children: [n.jsx("h1", { children: r.title }), n.jsx("p", { children: r.content })] }),
+          n.jsxs("div", { className: "detail-copy", children: [n.jsx("h1", { children: r.title }), n.jsx("p", { children: r.content })] }),
           n.jsxs("div", { className: "need-pill", children: [n.jsx("span", { children: "◌" }), r.need] }),
           De && Ue > 0 && n.jsx("div", { className: "edit-entry-row", children: n.jsxs("button", { className: "edit-post-btn", onClick: () => U(!0), children: ["✎ 编辑 ", n.jsxs("small", { children: ["剩余 ", pp(Ue)] })] }) }),
           n.jsxs("div", {
@@ -14756,9 +14761,9 @@ function Gv({ post: r, onBack: u, react: o, update: c, user: m, onStartDM: d, fl
               n.jsx("div", { className: `translation-panel-content${Ve.loading ? " is-loading" : ""}`, children: Ve.text }),
               n.jsx(TranslationLanguagePicker, { value: Ve.target, disabled: Ve.loading, onSelect: async (se) => { pt((ge) => ({ ...ge, loading: !0, target: se })); const ge = await Au(Ve.sourceText, 500, se); pt({ text: ge.translated, target: ge.target, sourceText: Ve.sourceText, loading: !1 }); } }),
               n.jsx("div", {
-                className: "friend-action-list",
+                className: "translation-actions",
                 children: [              n.jsxs("button", {
-                className: "msg-action-item",
+                className: "translation-action-btn",
                 onClick: () => {
                   const el = document.querySelector(".translation-panel .translation-panel-content");
                   if (el) {
@@ -14788,6 +14793,7 @@ function Gv({ post: r, onBack: u, react: o, update: c, user: m, onStartDM: d, fl
                 ],
               }),
 n.jsxs("button", {
+                  className: "translation-action-btn",
                   onClick: async () => {
                     try {
                       (await Wi(Ve.text), h("已复制译文"));
@@ -14798,7 +14804,7 @@ n.jsxs("button", {
                   children: "复制译文",
                 }),
               ]}),
-              n.jsx("button", { className: "friend-action-cancel", onClick: () => pt(null), children: "关闭" }),
+              n.jsx("button", { className: "translation-action-btn translation-close-btn", onClick: () => pt(null), children: "关闭" }),
             ],
           }),
         }),
@@ -17579,6 +17585,7 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
     },
     mtCopyFallback = (txt, ok, fail) => { const ta = document.createElement("textarea"); ta.value = txt; ta.style.cssText = "position:fixed;left:-9999px;top:0"; document.body.appendChild(ta); ta.select(); let done = !1; try { done = document.execCommand("copy"); } catch (e) {} ta.remove(); done ? ok() : fail(); },
     mtShowTextSelection = (bubble, flash) => {
+      if (NATIVE_SELECTION_ONLY) return;
       if (window.__mtSelDestroy) { try { window.__mtSelDestroy(); } catch (e) {} window.__mtSelDestroy = null; }
       if (bubble.querySelector(".chat-img,.chat-video,.chat-voice-msg,.chat-location")) return flash("该消息不支持选取文字");
       const EXCL = ".chat-voice-text,.chat-translated,.chat-read-status";
@@ -17870,7 +17877,6 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
         ["引用", () => quoteMessage(actionMsg)],
         ["提醒", () => openRemindPicker()],
         ["搜一搜", () => searchMessage(actionMsg)],
-        ["选择文字", () => selectMessageText(actionMsg)],
       ].map(([z, te]) => n.jsx("button", { type: "button", onClick: te, children: z }, z)) }) }) }),
       remindMsg && n.jsx("div", {
         className: "bd-picker-mask", onClick: () => setRemindMsg(null),
@@ -17905,7 +17911,7 @@ function Np({ user: r, chatType: u, target: o, title: c, onBack: m, flash: d, pe
       multiSelect && n.jsxs("div", { className: "multi-select-bar", children: [n.jsxs("span", { children: ["已选 ", selectedMessages.size, " 条"] }), n.jsxs("div", { children: [n.jsx("button", { onClick: () => { setMultiSelect(!1); setSelectedMessages(new Set()); }, children: "取消" }), n.jsx("button", { disabled: selectedMessages.size === 0, onClick: deleteSelectedMessages, children: "删除自己的消息" })] })] }),
       n.jsx("style", {
         children:
-          "@media (hover:none) and (pointer:coarse){.chat-messages,.chat-messages *{user-select:none!important;-webkit-user-select:none!important;-webkit-touch-callout:none!important}}.emoji-picker{display:grid;grid-template-columns:repeat(10,1fr);gap:2px;padding:8px;background:#f8f6f2;border-top:1px solid #e8e4dc;max-height:200px;overflow-y:auto}.emoji-picker button{width:32px;height:32px;border:none;background:none;font-size:20px;cursor:pointer;border-radius:6px;display:flex;align-items:center;justify-content:center;transition:all 0.15s}.emoji-picker button:hover{background:var(--sage-soft,#e8f0ea);transform:scale(1.2)}",
+          ".emoji-picker{display:grid;grid-template-columns:repeat(10,1fr);gap:2px;padding:8px;background:#f8f6f2;border-top:1px solid #e8e4dc;max-height:200px;overflow-y:auto}.emoji-picker button{width:32px;height:32px;border:none;background:none;font-size:20px;cursor:pointer;border-radius:6px;display:flex;align-items:center;justify-content:center;transition:all 0.15s}.emoji-picker button:hover{background:var(--sage-soft,#e8f0ea);transform:scale(1.2)}",
       }),
       J && n.jsx("div", { className: "emoji-picker", children: Wv.map((z) => n.jsx("button", { onClick: () => H(T + z), type: "button", children: z }, z)) }),
       n.jsxs("div", {
@@ -22595,6 +22601,7 @@ function VioHL({ text: r, words: u, currentIdx: o }) {
   for (const v of d) v.start < h || (v.start > h && c.push({ text: r.slice(h, v.start), isVio: !1 }), c.push({ text: r.slice(v.start, v.end), isVio: !0, wordIdx: v.wordIdx }), h = v.end);
   h < r.length && c.push({ text: r.slice(h), isVio: !1 });
   return n.jsx("div", {
+    className: "vio-highlight-overlay",
     style: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, padding: "14px 16px", fontSize: "12px", lineHeight: "1.7", whiteSpace: "pre-wrap", wordBreak: "break-word", overflow: "hidden", color: "#546158", pointerEvents: "none", zIndex: 0, fontFamily: "inherit" },
     children: c.length === 0 ? null : c.map((v, j) => v.isVio ? n.jsx("span", { style: { color: "#c4543d", fontWeight: 600, background: "rgba(196,84,61,0.15)", borderRadius: 2, padding: "0 1px" }, children: v.text }, j) : n.jsx("span", { children: v.text }, j)),
   });
