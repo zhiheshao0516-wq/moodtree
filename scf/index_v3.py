@@ -1360,6 +1360,7 @@ def send_message(body):
     target = body.get('target', '')
     frm = body.get('from', '')
     content = body.get('content', '')
+    quote = body.get('quote')
     if not frm or not content.strip():
         return {'error': 'Invalid message'}
     if msg_type != 'dm':
@@ -1421,6 +1422,12 @@ def send_message(body):
         'timestamp': int(time.time()),
         'time': now_str('%Y-%m-%d %H:%M')
     }
+    if isinstance(quote, dict) and quote.get('id'):
+        msg['quote'] = {
+            'id': str(quote.get('id', ''))[:100],
+            'sender': str(quote.get('sender', ''))[:50],
+            'summary': str(quote.get('summary', ''))[:160]
+        }
     data['messages'].append(msg)
     if len(data['messages']) > 2000:
         data['messages'] = data['messages'][-2000:]
@@ -1447,7 +1454,7 @@ def get_messages(msg_type, target, since=0, user_id=''):
     messages = [m for m in data.get('messages', [])
                 if m.get('type') == msg_type
                 and m.get('target') == target
-                and m.get('timestamp', 0) > since]
+                and (m.get('timestamp', 0) > since or m.get('recalledAt', 0) > since)]
     # Sync latest avatar/nickname for each message sender
     users_map = {u['id']: u for u in data.get('users', [])}
     for m in messages:
@@ -1469,13 +1476,350 @@ def delete_message(body):
         return {'error': 'Message not found'}
     if msg.get('from') != user_id:
         return {'error': 'Can only delete your own messages'}
-    # 5-minute recall limit
+    # 24-hour delete limit
     msg_time = msg.get('timestamp', 0)
-    if msg_time and int(time.time()) - msg_time > 300:
-        return {'error': 'Cannot recall messages older than 5 minutes'}
+    if msg_time and int(time.time()) - msg_time > 86400:
+        return {'error': '超过24小时的消息不可删除'}
     data['messages'] = [m for m in data['messages'] if m.get('id') != msg_id]
     write_data(data)
     return {'success': True}
+
+PET_LEVEL_TABLE = [(1, '种子', 0, 3), (2, '发芽', 3, 7), (3, '树苗', 7, 14), (4, '小树', 14, 30), (5, '参天树灵', 30, 30)]
+
+def _pet_level_of(exp):
+    lv = PET_LEVEL_TABLE[0]
+    for row in PET_LEVEL_TABLE:
+        if exp >= row[2]:
+            lv = row
+    return lv
+
+def _cst_today(ts=None):
+    return time.strftime('%Y-%m-%d', time.gmtime((ts if ts is not None else time.time()) + 8 * 3600))
+
+def _pet_public(pet):
+    out = dict(pet)
+    out['today_fed'] = pet.get('fed_date') == _cst_today()
+    return out
+
+def _pet_box(data, user_id):
+    """Migrate the former one-pet record in place and return the v2 container."""
+    pets = data.setdefault('pets', {})
+    stored = pets.get(user_id)
+    if not stored:
+        box = {'version': 2, 'items': [], 'active_id': '', 'mood_reward_date': '',
+               'mood_reward_pet_id': '', 'interaction_requests': []}
+        pets[user_id] = box
+        return box, False
+    if isinstance(stored, dict) and isinstance(stored.get('items'), list):
+        stored.setdefault('version', 2)
+        stored.setdefault('active_id', stored['items'][0].get('id', '') if stored['items'] else '')
+        stored.setdefault('mood_reward_date', '')
+        stored.setdefault('mood_reward_pet_id', '')
+        stored.setdefault('interaction_requests', [])
+        return stored, False
+    # Legacy object: keep every growth field and wrap it as the first instance.
+    legacy = dict(stored) if isinstance(stored, dict) else {}
+    legacy.setdefault('id', 'pet_legacy_' + user_id[-8:])
+    legacy.setdefault('adopted_at', int(time.time()))
+    legacy.setdefault('interactions', {})
+    box = {'version': 2, 'items': [legacy], 'active_id': legacy['id'],
+           'mood_reward_date': legacy.get('fed_date', ''),
+           'mood_reward_pet_id': legacy['id'] if legacy.get('fed_date') else '',
+           'interaction_requests': []}
+    pets[user_id] = box
+    return box, True
+
+def _pet_result(box):
+    items = [_pet_public(p) for p in box.get('items', [])]
+    main_id = box.get('mood_reward_pet_id') or (items[0].get('id') if items else '')
+    for _it in items:
+        _it['is_main'] = (_it.get('id') == main_id)
+    active = next((p for p in items if p.get('id') == box.get('active_id')), items[0] if items else None)
+    result = {'exists': bool(items), 'pets': items, 'active_id': active.get('id', '') if active else '',
+              'active_pet': active}
+    # Keep old clients operational during rollout.
+    if active:
+        result.update(active)
+    return result
+
+
+# ===== mood records / tags / achievements (merged from codex cf4b50d 2026-10-05) =====
+MOOD_NAMES = {5: '很好', 4: '好', 3: '一般', 2: '差', 1: '很差'}
+ACHIEVEMENT_RULES = {
+    'first_record': ('第一步', 1, 'total'), 'streak_7': ('一周坚持', 7, 'streak'),
+    'streak_30': ('一月习惯', 30, 'streak'), 'total_100': ('百日树洞', 100, 'total'),
+    'total_365': ('一年陪伴', 365, 'total'),
+}
+
+def _date_of_post(post):
+    value = str(post.get('time', ''))[:10]
+    if re.match(r'^\d{4}-\d{2}-\d{2}$', value):
+        return value
+    ts = post.get('created_at', 0)
+    try:
+        return datetime.datetime.fromtimestamp(float(ts) / (1000 if float(ts) > 1e12 else 1), tz_shanghai).strftime('%Y-%m-%d')
+    except Exception:
+        return ''
+
+def _post_tags(post):
+    explicit = post.get('tags', [])
+    if isinstance(explicit, str):
+        explicit = [x.strip().lstrip('#') for x in explicit.split(',')]
+    parsed = re.findall(r'#([^#\s，。！？,.!?]{1,20})', (post.get('title', '') + ' ' + post.get('content', '')))
+    out = []
+    for tag in list(explicit or []) + parsed:
+        tag = str(tag).strip().lstrip('#')[:20]
+        if tag and tag not in out:
+            out.append(tag)
+    return out[:5]
+
+def _mood_record(post):
+    score = int(post.get('mood_score') or 3)
+    score = max(1, min(5, score))
+    return {
+        'mood_id': post.get('id'), 'id': post.get('id'), 'date': _date_of_post(post),
+        'created_at': post.get('created_at'), 'time': post.get('time'),
+        'mood_score': score, 'mood': MOOD_NAMES[score], 'mood_emoji': post.get('mood_emoji', '◌'),
+        'title': post.get('title', ''), 'content': post.get('content', ''),
+        'tags': _post_tags(post), 'ai_analysis': post.get('ai_analysis'),
+    }
+
+def _streak_stats(records):
+    dates = sorted({r.get('date') for r in records if r.get('date')})
+    if not dates:
+        return 0, 0
+    longest = run = 1
+    for i in range(1, len(dates)):
+        a = datetime.datetime.strptime(dates[i - 1], '%Y-%m-%d').date()
+        b = datetime.datetime.strptime(dates[i], '%Y-%m-%d').date()
+        run = run + 1 if (b - a).days == 1 else 1
+        longest = max(longest, run)
+    today = datetime.datetime.now(tz_shanghai).date()
+    last = datetime.datetime.strptime(dates[-1], '%Y-%m-%d').date()
+    current = 0
+    if (today - last).days <= 1:
+        current = 1
+        for i in range(len(dates) - 1, 0, -1):
+            a = datetime.datetime.strptime(dates[i - 1], '%Y-%m-%d').date()
+            b = datetime.datetime.strptime(dates[i], '%Y-%m-%d').date()
+            if (b - a).days != 1: break
+            current += 1
+    return current, longest
+
+def mood_list(qp):
+    uid = qp.get('userid', '')
+    data = read_data()
+    rows = [_mood_record(x) for x in data.get('posts', []) if x.get('authorId') == uid]
+    keyword = (qp.get('keyword') or '').strip().lower()
+    moods = {x for x in (qp.get('moods') or '').split(',') if x}
+    tags = {x for x in (qp.get('tags') or qp.get('tag') or '').split(',') if x}
+    start, end = qp.get('startdate') or qp.get('starttime') or '', qp.get('enddate') or qp.get('endtime') or ''
+    if keyword: rows = [x for x in rows if keyword in (x['title'] + ' ' + x['content']).lower()]
+    if moods: rows = [x for x in rows if str(x['mood_score']) in moods or x['mood'] in moods]
+    if tags: rows = [x for x in rows if tags.intersection(x['tags'])]
+    if start: rows = [x for x in rows if x['date'] >= start[:10]]
+    if end: rows = [x for x in rows if x['date'] <= end[:10]]
+    rows.sort(key=lambda x: (x.get('date', ''), x.get('created_at') or 0), reverse=True)
+    current, longest = _streak_stats(rows)
+    return {'records': rows, 'total': len(rows), 'streak': current, 'longest_streak': longest}
+
+def export_moods(qp):
+    result = mood_list({**qp, 'keyword': '', 'moods': '', 'tags': '', 'startdate': '', 'enddate': ''})
+    return {'records': result['records'], 'exported_at': now_str('%Y-%m-%d %H:%M:%S')}
+
+def tags_summary(uid):
+    rows = mood_list({'userid': uid})['records']
+    stats = {}
+    for row in rows:
+        for tag in row['tags']:
+            s = stats.setdefault(tag, {'tag': tag, 'count': 0, 'score_total': 0})
+            s['count'] += 1; s['score_total'] += row['mood_score']
+    return {'tags': [{**v, 'average': round(v['score_total'] / v['count'], 2)} for v in sorted(stats.values(), key=lambda x: (-x['count'], x['tag']))]}
+
+def update_tag(body, action='add'):
+    uid, pid = body.get('userId', ''), str(body.get('moodId') or body.get('postId') or '')
+    tag = str(body.get('tag', '')).strip().lstrip('#')[:20]
+    data = read_data(); post = next((x for x in data['posts'] if str(x.get('id')) == pid and x.get('authorId') == uid), None)
+    if not post: return {'error': '记录不存在或无权操作'}
+    tags = _post_tags(post)
+    if action == 'add' and tag and tag not in tags: tags = (tags + [tag])[:5]
+    if action == 'remove': tags = [x for x in tags if x != tag]
+    post['tags'] = tags; write_data(data)
+    return {'ok': True, 'tags': tags}
+
+def manage_tag(body, action):
+    uid, old = body.get('userId', ''), str(body.get('tag', '')).strip().lstrip('#')
+    new = str(body.get('newTag', '')).strip().lstrip('#')[:20]
+    data = read_data(); changed = 0
+    for post in data['posts']:
+        if post.get('authorId') != uid: continue
+        tags = _post_tags(post)
+        if old not in tags: continue
+        post['tags'] = list(dict.fromkeys(([new if x == old else x for x in tags] if action == 'rename' and new else [x for x in tags if x != old])))[:5]
+        changed += 1
+    write_data(data); return {'ok': True, 'changed': changed}
+
+def achievements_get(uid, persist=True):
+    data = read_data(); records = mood_list({'userid': uid})['records']; streak, longest = _streak_stats(records)
+    earned = {x.get('achievement_key') for x in data.setdefault('achievements', []) if x.get('user_id') == uid}
+    newly = []
+    for key, (_, threshold, mode) in ACHIEVEMENT_RULES.items():
+        value = longest if mode == 'streak' else len({x['date'] for x in records if x['date']})
+        if value >= threshold and key not in earned:
+            data['achievements'].append({'id': str(int(time.time()*1000)) + key, 'user_id': uid, 'achievement_key': key, 'unlocked_at': now_str('%Y-%m-%d %H:%M:%S')})
+            earned.add(key); newly.append(key)
+    # Streak rewards unlock the next unowned species (v2 pet box, no replacement).
+    if 'streak_7' in newly or 'streak_30' in newly:
+        box, _ = _pet_box(data, uid)
+        owned = {x.get('pet_type') for x in box['items']}
+        for key in ('streak_7', 'streak_30'):
+            if key not in newly: continue
+            ptype = next((f'{x:02d}' for x in range(1, 21) if f'{x:02d}' not in owned), None)
+            if ptype:
+                pet = {'id': f"pet_{int(time.time()*1000)}_{len(box['items']) + 1}", 'pet_type': ptype,
+                       'pet_name': '成就伙伴', 'adopted_at': int(time.time()), 'exp': 0, 'level': 1,
+                       'level_name': '种子', 'streak': streak, 'fed_date': '', 'last_mood': '',
+                       'interactions': {}, 'unlock_source': key}
+                box['items'].append(pet)
+                if not box.get('active_id'):
+                    box['active_id'] = pet['id']
+                owned.add(ptype)
+    if newly and persist: write_data(data)
+    return {'streak': streak, 'longest_streak': longest, 'total_days': len({x['date'] for x in records if x['date']}), 'earned': list(earned), 'new': newly}
+
+def pets_main(body, user_id):
+    """Set the main pet: daily mood growth rewards follow this pet (v2 box)."""
+    data = read_data()
+    box, _ = _pet_box(data, user_id)
+    pet_id = str(body.get('petId') or '')
+    pet = next((p for p in box['items'] if p.get('id') == pet_id), None)
+    if not pet:
+        return {'ok': False, 'error': '宠物不存在'}
+    box['mood_reward_pet_id'] = pet_id
+    box['active_id'] = pet_id
+    write_data(data)
+    return {'ok': True, 'pet': _pet_public(pet), **_pet_result(box)}
+
+def pets_get(user_id):
+    data = read_data()
+    box, migrated = _pet_box(data, user_id)
+    if migrated:
+        write_data(data)
+    return _pet_result(box)
+
+def pets_create(body, user_id):
+    """Adopt another independent pet instance. Same species is allowed."""
+    data = read_data()
+    box, _ = _pet_box(data, user_id)
+    pet_type = str(body.get('pet_type') or body.get('petType') or '')
+    pet_name = str(body.get('pet_name') or body.get('petName') or '').strip()
+    if pet_type not in {f"{i:02d}" for i in range(1, 21)}:
+        return {'ok': False, 'error': '无效的宠物类型'}
+    if not pet_name:
+        return {'ok': False, 'error': '先给小伙伴取个名字'}
+    num, name, _, _ = PET_LEVEL_TABLE[0]
+    request_id = str(body.get('requestId') or '')[:80]
+    if request_id:
+        old = next((p for p in box['items'] if p.get('create_request_id') == request_id), None)
+        if old:
+            return {'ok': True, **_pet_result(box), 'pet': _pet_public(old)}
+    now_ms = int(time.time() * 1000)
+    pet = {'id': f"pet_{now_ms}_{len(box['items']) + 1}", 'pet_type': pet_type,
+           'pet_name': pet_name[:8], 'adopted_at': int(time.time()),
+           'exp': 0, 'level': num, 'level_name': name, 'streak': 0,
+           'fed_date': '', 'last_mood': '', 'interactions': {},
+           'create_request_id': request_id}
+    box['items'].append(pet)
+    box['active_id'] = pet['id']
+    write_data(data)
+    return {'ok': True, **_pet_result(box), 'pet': _pet_public(pet)}
+
+def pets_select(body, user_id):
+    data = read_data()
+    box, migrated = _pet_box(data, user_id)
+    pet_id = str(body.get('petId') or '')
+    pet = next((p for p in box['items'] if p.get('id') == pet_id), None)
+    if not pet:
+        return {'ok': False, 'error': '宠物不存在'}
+    box['active_id'] = pet_id
+    write_data(data)
+    return {'ok': True, **_pet_result(box)}
+
+def pets_interact(body, user_id):
+    data = read_data()
+    box, _ = _pet_box(data, user_id)
+    pet_id = str(body.get('petId') or box.get('active_id') or '')
+    action = str(body.get('action') or '')
+    if action not in ('pet', 'feed', 'play'):
+        return {'ok': False, 'error': '不支持的互动'}
+    pet = next((p for p in box['items'] if p.get('id') == pet_id), None)
+    if not pet:
+        return {'ok': False, 'error': '宠物不存在'}
+    request_id = str(body.get('requestId') or '')[:80]
+    requests = box.setdefault('interaction_requests', [])
+    if request_id and request_id in requests:
+        return {'ok': True, 'duplicate': True, 'pet': _pet_public(pet)}
+    interactions = pet.setdefault('interactions', {})
+    interactions[action + '_count'] = int(interactions.get(action + '_count', 0)) + 1
+    interactions['last_' + action + '_at'] = int(time.time())
+    pet['last_interaction'] = action
+    if request_id:
+        requests.append(request_id)
+        del requests[:-100]
+    write_data(data)
+    replies = {'pet': '舒服得眯起了眼睛', 'feed': '开心地吃完了小点心', 'play': '兴奋地转了一圈'}
+    return {'ok': True, 'pet': _pet_public(pet), 'reply': pet.get('pet_name', '小伙伴') + replies[action]}
+
+def pets_feed(body, user_id):
+    """Feed once per day (CST). exp+1; streak continues only if fed yesterday."""
+    data = read_data()
+    box, _ = _pet_box(data, user_id)
+    pet_id = str(body.get('petId') or box.get('active_id') or '')
+    pet = next((p for p in box['items'] if p.get('id') == pet_id), None)
+    if not pet:
+        return {'ok': False, 'error': '还没有宠物，先去领养一只'}
+    now = time.time() + 8 * 3600
+    today = time.strftime('%Y-%m-%d', time.gmtime(now))
+    if box.get('mood_reward_date') == today:
+        return {'ok': False, 'error': '今天已经喂过啦'}
+    yesterday = time.strftime('%Y-%m-%d', time.gmtime(now - 86400))
+    streak = (pet.get('streak') or 0) + 1 if pet.get('fed_date') == yesterday else 1
+    old_lv = _pet_level_of(pet.get('exp') or 0)
+    exp = (pet.get('exp') or 0) + 1
+    num, name, _, _ = _pet_level_of(exp)
+    pet.update({'exp': exp, 'level': num, 'level_name': name, 'streak': streak,
+                'fed_date': today, 'last_mood': str(body.get('mood') or '')[:10]})
+    box['active_id'] = pet['id']
+    box['mood_reward_date'] = today
+    box['mood_reward_pet_id'] = pet['id']
+    write_data(data)
+    out = dict(pet)
+    out['leveled_up'] = num > old_lv[0]
+    out['ok'] = True
+    return out
+
+def recall_message(body):
+    msg_id = body.get('messageId', '')
+    user_id = body.get('userId', '')
+    if not msg_id or not user_id:
+        return {'error': '缺少消息或用户信息', 'code': 'BAD_REQUEST'}
+    data = read_data()
+    msg = next((m for m in data.get('messages', []) if m.get('id') == msg_id), None)
+    if not msg:
+        return {'error': '消息不存在', 'code': 'NOT_FOUND'}
+    if msg.get('from') != user_id:
+        return {'error': '只能撤回自己发送的消息', 'code': 'FORBIDDEN'}
+    if int(time.time()) - int(msg.get('timestamp', 0) or 0) > 86400:
+        return {'error': '超过24小时的消息不可撤回', 'code': 'EXPIRED'}
+    if msg.get('recalled'):
+        return {'success': True, 'recalledAt': msg.get('recalledAt')}
+    recalled_at = int(time.time())
+    msg['recalled'] = True
+    msg['recalledAt'] = recalled_at
+    msg['content'] = ''
+    msg.pop('quote', None)
+    write_data(data)
+    return {'success': True, 'messageId': msg_id, 'recalledAt': recalled_at}
 
 def mark_read(body):
     """Mark all messages in a conversation as read for a user"""
@@ -1531,22 +1875,22 @@ def get_unread(user_id):
         dm_target = '_'.join(sorted([user_id, fid]))
         key = f"{user_id}_dm_{dm_target}"
         last_read = read_states.get(key, 0)
-        count = sum(1 for m in messages
+        count = len({m.get('id') or (m.get('from'), m.get('timestamp'), m.get('content')) for m in messages
                     if m.get('type') == 'dm'
                     and m.get('target') == dm_target
                     and m.get('from') != user_id
-                    and m.get('timestamp', 0) > last_read)
+                    and m.get('timestamp', 0) > last_read})
         if count > 0:
             dm_unread[fid] = count
     # Count unread room messages
     for rid in room_ids:
         key = f"{user_id}_room_{rid}"
         last_read = read_states.get(key, 0)
-        count = sum(1 for m in messages
+        count = len({m.get('id') or (m.get('from'), m.get('timestamp'), m.get('content')) for m in messages
                     if m.get('type') == 'room'
                     and m.get('target') == rid
                     and m.get('from') != user_id
-                    and m.get('timestamp', 0) > last_read)
+                    and m.get('timestamp', 0) > last_read})
         if count > 0:
             room_unread[rid] = count
     total = sum(dm_unread.values()) + sum(room_unread.values())
@@ -2664,6 +3008,36 @@ def main_handler(event, context):
             result = clear_chat(req)
         elif path == '/api/chat/delete' and method == 'POST':
             result = delete_message(req)
+        elif path == '/api/chat/recall' and method == 'POST':
+            result = recall_message(req)
+        elif path in ('/api/mood/list', '/api/moods') and method == 'GET':
+            result = mood_list(qp)
+        elif path == '/api/export' and method == 'GET':
+            result = export_moods(qp)
+        elif path == '/api/tags' and method == 'GET':
+            result = tags_summary(qp.get('userid', ''))
+        elif path == '/api/tags/rename' and method == 'POST':
+            result = manage_tag(req, 'rename')
+        elif path == '/api/tags/delete' and method == 'POST':
+            result = manage_tag(req, 'delete')
+        elif re.match(r'^/api/mood/[^/]+/tags$', path) and method == 'POST':
+            req['moodId'] = path.split('/')[3]; result = update_tag(req, 'add')
+        elif re.match(r'^/api/mood/[^/]+/tags/[^/]+$', path) and method == 'DELETE':
+            req['userId'] = _auth_uid or ''; req['moodId'] = path.split('/')[3]; req['tag'] = urllib.parse.unquote(path.split('/')[5]); result = update_tag(req, 'remove')
+        elif path == '/api/achievements' and method == 'GET':
+            result = achievements_get(qp.get('userid', ''))
+        elif path == '/api/pets/get' and method == 'GET':
+            result = pets_get(qp.get('userid', ''))
+        elif path == '/api/pets/create' and method == 'POST':
+            result = pets_create(req, req.get('userId', ''))
+        elif path == '/api/pets/feed' and method == 'POST':
+            result = pets_feed(req, req.get('userId', ''))
+        elif path == '/api/pets/select' and method == 'POST':
+            result = pets_select(req, req.get('userId', ''))
+        elif path == '/api/pets/main' and method == 'POST':
+            result = pets_main(req, req.get('userId', ''))
+        elif path == '/api/pets/interact' and method == 'POST':
+            result = pets_interact(req, req.get('userId', ''))
         elif path == '/api/chat/read' and method == 'POST':
             result = mark_read(req)
         elif path == '/api/chat/unread' and method == 'GET':
@@ -2814,7 +3188,8 @@ def main_handler(event, context):
             result = {'error': 'Not found', 'path': path, 'method': method}
     except Exception as e:
         result = {'error': str(e)}
-    return {'statusCode': 200, 'headers': cors, 'body': json.dumps(result, ensure_ascii=False)}
+    status_code = 403 if isinstance(result, dict) and result.get('code') == 'FORBIDDEN' else 200
+    return {'statusCode': status_code, 'headers': cors, 'body': json.dumps(result, ensure_ascii=False)}
 
 
 # ===== Memory / 回忆功能 =====
