@@ -4,7 +4,7 @@
  *  - 应用外壳与静态资源采用 stale-while-revalidate：先回缓存保证秒开，后台异步更新
  *  - 版本升级时 activate 清理旧缓存
  */
-const CACHE = 'moodtree-shell-v1';
+const CACHE = 'moodtree-shell-v6';
 const SHELL = [
   '/',
   '/index.html',
@@ -34,6 +34,19 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;       // 跨域资源不托管
   if (url.pathname.startsWith('/api/')) return;          // API 永远走网络
+
+  const isHtml = req.mode === 'navigate' || (req.headers.get('accept') || '').includes('text/html');
+  if (isHtml) {
+    e.respondWith(
+      fetch(req)
+        .then((res) => {
+          if (res && res.ok) caches.open(CACHE).then((cache) => cache.put(req, res.clone())).catch(() => {});
+          return res;
+        })
+        .catch(() => caches.open(CACHE).then((cache) => cache.match(req, { ignoreSearch: true })).then((cached) => cached || Response.error()))
+    );
+    return;
+  }
 
   e.respondWith(
     caches.open(CACHE).then(async (cache) => {

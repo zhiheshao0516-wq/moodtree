@@ -22,6 +22,26 @@
   <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
   <script>
+    (function () {
+      if (typeof CanvasRenderingContext2D === "undefined" || CanvasRenderingContext2D.prototype.roundRect) return;
+      CanvasRenderingContext2D.prototype.roundRect = function (x, y, width, height, radii) {
+        var r = Array.isArray(radii) ? Number(radii[0] || 0) : Number(radii || 0);
+        r = Math.max(0, Math.min(r, Math.abs(width) / 2, Math.abs(height) / 2));
+        this.moveTo(x + r, y);
+        this.lineTo(x + width - r, y);
+        this.quadraticCurveTo(x + width, y, x + width, y + r);
+        this.lineTo(x + width, y + height - r);
+        this.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+        this.lineTo(x + r, y + height);
+        this.quadraticCurveTo(x, y + height, x, y + height - r);
+        this.lineTo(x, y + r);
+        this.quadraticCurveTo(x, y, x + r, y);
+        this.closePath();
+        return this;
+      };
+    })();
+  </script>
+  <script>
     if ("serviceWorker" in navigator && location.protocol === "https:") {
       window.addEventListener("load", function () {
         navigator.serviceWorker.register("/sw.js").catch(function () {});
