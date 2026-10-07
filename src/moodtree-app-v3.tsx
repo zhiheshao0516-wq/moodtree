@@ -11800,12 +11800,16 @@ function Pet3DViewer({pet:r,action:o,onTap:a}) {
   const u=p.useRef(null),c=p.useRef(null),f=p.useRef(null),[m,d]=p.useState("loading"),[h,v]=p.useState(!1);
   p.useEffect(()=>{f.current=o?{...o,started:performance.now()}:null},[o==null?void 0:o.id]);
   p.useEffect(()=>{
-    let j=!1,y=null,C=null,S=null,T=null,H=null,k=null,X=!0,J=0,D=1,I=new Map,V=0,de=null;
+    let j=!1,y=null,C=null,S=null,T=null,H=null,k=null,X=!0,J=0,D=1,I=new Map,V=0,de=null,clipActions=new Map(),idleCycle=0,actionTimer=0,lastActionId=null,currentClip=null;
+    const playClip=(name,once=!1)=>{const next=clipActions.get(name);if(!next)return!1;currentClip&&currentClip!==next&&currentClip.fadeOut(.18);next.reset().setEffectiveWeight(1).fadeIn(.18);next.setLoop(once?2200:2201,once?1:Infinity);next.clampWhenFinished=once;next.play();currentClip=next;return!0},
+      playRandomIdle=()=>{const choices=["idle_breathe","idle_blink","idle_tail","look_follow"].filter(name=>clipActions.has(name));if(choices.length)playClip(choices[Math.floor(Math.random()*choices.length)])};
     const P=()=>{
       if(!X||j||!y||!C||!S)return;
       J=requestAnimationFrame(P);
       const Y=T?T.getDelta():.016;
       H&&H.update(Y);
+      const requested=f.current;
+      if(requested&&requested.id!==lastActionId){lastActionId=requested.id;const actionName=requested.type==="sad"?"look_follow":"touch_happy";if(playClip(actionName,!0)){clearTimeout(actionTimer);actionTimer=setTimeout(playRandomIdle,1550)}}
       if(k){const q=f.current,E=q?(performance.now()-q.started)/1000:99,R=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;if(!R&&E<.9){const W=Math.sin(Math.min(1,E/.9)*Math.PI);q.type==="pet"&&(k.rotation.z=.12*W);q.type==="feed"&&(k.scale.setScalar(D*(1+.08*W)));q.type==="play"&&(k.position.y=.42*W,k.rotation.y+=.08);q.type==="mood"&&(k.position.y=.25*W,k.rotation.y+=.05)}else{k.rotation.z*=.82;k.position.y*=.82;const W=k.scale.x+(D-k.scale.x)*.16;k.scale.setScalar(W)}}
       C.render(y,S)
     },Y=()=>{
@@ -11827,16 +11831,16 @@ function Pet3DViewer({pet:r,action:o,onTap:a}) {
         y=new ye.Scene;S=new ye.PerspectiveCamera(32,1,.1,100);S.position.set(0,.55,6.5);
         C=new ye.WebGLRenderer({alpha:!0,antialias:!0,powerPreference:"high-performance"});C.setPixelRatio(Math.min(window.devicePixelRatio||1,2));C.setClearColor(0,0);C.outputColorSpace=ye.SRGBColorSpace;C.shadowMap.enabled=!0;C.shadowMap.type=ye.PCFSoftShadowMap;C.toneMapping=ye.ACESFilmicToneMapping;C.toneMappingExposure=1.08;
         C.domElement.className="pet-3d-canvas";u.current.appendChild(C.domElement);
-        y.add(new ye.HemisphereLight(16777215,8291463,2.25));const Ce=new ye.DirectionalLight(16777215,3.2);Ce.position.set(3,5,5);Ce.castShadow=!0;Ce.shadow.mapSize.set(512,512);y.add(Ce);const floor=new ye.Mesh(new ye.CircleGeometry(1.55,48),new ye.ShadowMaterial({color:4286021,opacity:.16}));floor.rotation.x=-Math.PI/2;floor.position.y=-1.72;floor.receiveShadow=!0;y.add(floor);
+        y.add(new ye.HemisphereLight(16777215,8291463,2.25));const Ce=new ye.DirectionalLight(16777215,3.2);Ce.position.set(3,5,5);Ce.castShadow=!0;Ce.shadow.mapSize.set(512,512);y.add(Ce);const floor=new ye.Mesh(new ye.CircleGeometry(1.55,48),new ye.ShadowMaterial({color:4286021,opacity:.16}));floor.rotation.x=-Math.PI/2;floor.position.y=r.type==="01"?-.9:-1.72;floor.receiveShadow=!0;y.add(floor);
         const Se=new ye.GLTFLoader;Se.load(`/pets3d/${r.type}.glb`,ke=>{
-          if(j)return;k=ke.scene;k.traverse(e=>{e.isMesh&&(e.castShadow=!0,e.receiveShadow=!0,e.material&&(e.material.roughness=Math.min(.82,e.material.roughness??.72),e.material.needsUpdate=!0))});y.add(k);k.scale.setScalar(D);H=new ye.AnimationMixer(k);ke.animations&&ke.animations[0]&&H.clipAction(ke.animations[0]).play();T=new ye.Clock;Y();d("ready");P()
+          if(j)return;k=ke.scene;k.traverse(e=>{e.isMesh&&(e.castShadow=!0,e.receiveShadow=!0,e.material&&(e.material.metalness=0,e.material.roughness=Math.max(.76,Math.min(.92,e.material.roughness??.84)),e.material.needsUpdate=!0))});y.add(k);k.scale.setScalar(D);H=new ye.AnimationMixer(k);(ke.animations||[]).forEach(clip=>clipActions.set(clip.name,H.clipAction(clip)));playRandomIdle();idleCycle=setInterval(playRandomIdle,3200);T=new ye.Clock;Y();d("ready");P()
         },void 0,()=>{!j&&d("failed")});
         c.current=new ResizeObserver(Y);c.current.observe(u.current);
         de=new IntersectionObserver(e=>{X=!!e[0]?.isIntersecting;X&&!J&&P()},{rootMargin:"80px"});de.observe(u.current);
         u.current.addEventListener("pointerdown",K);u.current.addEventListener("pointermove",F);u.current.addEventListener("pointerup",Z);u.current.addEventListener("pointercancel",Z)
       }catch{!j&&d("failed")}
     })();
-    return()=>{j=!0;cancelAnimationFrame(J);c.current&&c.current.disconnect();de&&de.disconnect();if(u.current){u.current.removeEventListener("pointerdown",K);u.current.removeEventListener("pointermove",F);u.current.removeEventListener("pointerup",Z);u.current.removeEventListener("pointercancel",Z)}H&&H.stopAllAction();k&&k.traverse(e=>{e.geometry&&e.geometry.dispose&&e.geometry.dispose();if(e.material){const Z=Array.isArray(e.material)?e.material:[e.material];Z.forEach(ye=>ye.dispose&&ye.dispose())}});C&&(C.dispose(),C.domElement.remove())}
+    return()=>{j=!0;cancelAnimationFrame(J);clearInterval(idleCycle);clearTimeout(actionTimer);c.current&&c.current.disconnect();de&&de.disconnect();if(u.current){u.current.removeEventListener("pointerdown",K);u.current.removeEventListener("pointermove",F);u.current.removeEventListener("pointerup",Z);u.current.removeEventListener("pointercancel",Z)}H&&H.stopAllAction();k&&k.traverse(e=>{e.geometry&&e.geometry.dispose&&e.geometry.dispose();if(e.material){const Z=Array.isArray(e.material)?e.material:[e.material];Z.forEach(ye=>ye.dispose&&ye.dispose())}});C&&(C.dispose(),C.domElement.remove())}
   },[r.type]);
   return n.jsxs("div",{className:`pet-3d-viewer ${m} ${o?`doing-${o.type}`:""}`,onClick:a,children:[
     h?n.jsx("div",{className:"pet-image-fallback large",children:"🌱"}):n.jsx("img",{className:"pet-3d-poster",src:r.image,alt:r.name,onError:()=>v(!0)}),
