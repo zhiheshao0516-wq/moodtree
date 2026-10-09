@@ -4,7 +4,7 @@
  *  - 应用外壳与静态资源采用 stale-while-revalidate：先回缓存保证秒开，后台异步更新
  *  - 版本升级时 activate 清理旧缓存
  */
-const CACHE = 'moodtree-shell-v6';
+const CACHE = 'moodtree-shell-v7';
 const SHELL = [
   '/',
   '/index.html',
