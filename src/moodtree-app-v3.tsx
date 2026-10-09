@@ -11832,7 +11832,7 @@ function Pet3DViewer({pet:r,action:o,onTap:a}) {
         C=new ye.WebGLRenderer({alpha:!0,antialias:!0,powerPreference:"high-performance"});C.setPixelRatio(Math.min(window.devicePixelRatio||1,2));C.setClearColor(0,0);C.outputColorSpace=ye.SRGBColorSpace;C.shadowMap.enabled=!0;C.shadowMap.type=ye.PCFSoftShadowMap;C.toneMapping=ye.ACESFilmicToneMapping;C.toneMappingExposure=1.08;
         C.domElement.className="pet-3d-canvas";u.current.appendChild(C.domElement);
         y.add(new ye.HemisphereLight(16777215,8291463,2.25));const Ce=new ye.DirectionalLight(16777215,3.2);Ce.position.set(3,5,5);Ce.castShadow=!0;Ce.shadow.mapSize.set(512,512);y.add(Ce);const floor=new ye.Mesh(new ye.CircleGeometry(1.55,48),new ye.ShadowMaterial({color:4286021,opacity:.16}));floor.rotation.x=-Math.PI/2;floor.position.y=r.type==="01"?-.9:-1.72;floor.receiveShadow=!0;y.add(floor);
-        const Se=new ye.GLTFLoader;Se.load(`/pets3d/${r.type}.glb?v=7`,ke=>{
+        const Se=new ye.GLTFLoader;Se.load(`/pets3d/${r.type}.glb?v=designer-toy-2`,ke=>{
           if(j)return;k=ke.scene;k.traverse(e=>{e.isMesh&&(e.castShadow=!0,e.receiveShadow=!0,e.material&&(e.material.metalness=0,e.material.roughness=Math.max(.76,Math.min(.92,e.material.roughness??.84)),e.material.needsUpdate=!0))});y.add(k);k.scale.setScalar(D);H=new ye.AnimationMixer(k);(ke.animations||[]).forEach(clip=>clipActions.set(clip.name,H.clipAction(clip)));playRandomIdle();idleCycle=setInterval(playRandomIdle,3200);T=new ye.Clock;Y();d("ready");P()
         },void 0,error=>{console.error("[MoodTree] pet 3D load failed",{petType:r.type,error});!j&&d("failed")});
         c.current=new ResizeObserver(Y);c.current.observe(u.current);

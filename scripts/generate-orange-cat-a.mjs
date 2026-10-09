@@ -15,9 +15,9 @@ root.name = "MoodTreeOrangeCatA";
 const mat = (name, color, roughness = .86) => new THREE.MeshStandardMaterial({
   name, color, roughness, metalness: 0,
 });
-const orange = mat("warm matte orange", 0xf2a25e);
-const stripe = mat("soft tangerine stripes", 0xd9773f);
-const cream = mat("warm cream", 0xffedcf);
+const orange = mat("matte resin orange", 0xf2a04f, .76);
+const stripe = mat("tangerine tiger stripes", 0xd96f32, .78);
+const cream = mat("ivory chest and paws", 0xffeccb, .8);
 const pink = mat("blush pink", 0xf4a8a5);
 const green = mat("deep sage green eyes", 0x366e5b, .72);
 const black = mat("soft charcoal", 0x3b3a37, .76);
@@ -42,59 +42,63 @@ const head = new THREE.Group(); head.name = "Head"; root.add(head);
 const face = new THREE.Group(); face.name = "Face"; head.add(face);
 const tail = new THREE.Group(); tail.name = "Tail"; root.add(tail);
 
-sphere("BodyShell", orange, [0, .18, 0], [.92, 1.1, .68], body);
-sphere("ChestBib", cream, [0, .38, .61], [.48, .66, .09], body, 24);
-sphere("HeadShell", orange, [0, 1.48, .04], [1.08, .94, .86], head);
-sphere("Muzzle", cream, [0, 1.30, .77], [.62, .40, .16], face, 24);
+sphere("BodyShell", orange, [0, .16, 0], [.67, 1.17, .54], body);
+sphere("ChestBib", cream, [0, .26, .51], [.34, .72, .07], body, 24);
+sphere("HeadShell", orange, [0, 1.67, .03], [.80, .70, .67], head);
+sphere("Muzzle", cream, [0, 1.52, .61], [.45, .28, .13], face, 24);
 
 // Rounded ears built from softened cones.
-const earGeo = new THREE.ConeGeometry(.42, .82, 32, 4);
-mesh("EarL", earGeo, orange, [-.66, 2.22, .02], [.92, 1, .7], [0, 0, -.16], head);
-mesh("EarR", earGeo, orange, [.66, 2.22, .02], [.92, 1, .7], [0, 0, .16], head);
-const innerGeo = new THREE.ConeGeometry(.25, .52, 32, 2);
-mesh("EarInnerL", innerGeo, pink, [-.66, 2.22, .24], [.85, .86, .34], [0, 0, -.16], head);
-mesh("EarInnerR", innerGeo, pink, [.66, 2.22, .24], [.85, .86, .34], [0, 0, .16], head);
+const earGeo = new THREE.ConeGeometry(.31, .64, 32, 4);
+mesh("EarL", earGeo, orange, [-.49, 2.25, .02], [.92, 1, .72], [0, 0, -.12], head);
+mesh("EarR", earGeo, orange, [.49, 2.25, .02], [.92, 1, .72], [0, 0, .12], head);
+const innerGeo = new THREE.ConeGeometry(.18, .40, 32, 2);
+mesh("EarInnerL", innerGeo, pink, [-.49, 2.25, .18], [.84, .86, .35], [0, 0, -.12], head);
+mesh("EarInnerR", innerGeo, pink, [.49, 2.25, .18], [.84, .86, .35], [0, 0, .12], head);
 
-const eyeL = sphere("EyeL", green, [-.39, 1.60, .77], [.26, .31, .12], face, 32);
-const eyeR = sphere("EyeR", green, [.39, 1.60, .77], [.26, .31, .12], face, 32);
-sphere("PupilL", black, [-.39, 1.60, .885], [.12, .18, .045], face, 20);
-sphere("PupilR", black, [.39, 1.60, .885], [.12, .18, .045], face, 20);
-sphere("HighlightL", white, [-.46, 1.72, .925], [.055, .07, .025], face, 16);
-sphere("HighlightR", white, [.32, 1.72, .925], [.055, .07, .025], face, 16);
-sphere("CheekL", pink, [-.65, 1.26, .80], [.22, .12, .05], face, 20);
-sphere("CheekR", pink, [.65, 1.26, .80], [.22, .12, .05], face, 20);
-sphere("Nose", pink, [0, 1.35, .96], [.10, .075, .06], face, 20);
+const eyeL = sphere("EyeL", green, [-.28, 1.74, .61], [.19, .24, .095], face, 32);
+const eyeR = sphere("EyeR", green, [.28, 1.74, .61], [.19, .24, .095], face, 32);
+sphere("PupilL", black, [-.28, 1.75, .70], [.085, .14, .035], face, 20);
+sphere("PupilR", black, [.28, 1.75, .70], [.085, .14, .035], face, 20);
+sphere("HighlightL", white, [-.33, 1.84, .735], [.042, .052, .018], face, 16);
+sphere("HighlightR", white, [.23, 1.84, .735], [.042, .052, .018], face, 16);
+sphere("CheekL", pink, [-.48, 1.48, .64], [.15, .085, .04], face, 20);
+sphere("CheekR", pink, [.48, 1.48, .64], [.15, .085, .04], face, 20);
+sphere("Nose", pink, [0, 1.56, .75], [.075, .055, .045], face, 20);
 
 // Smile and whiskers use rounded tubes.
 const tube = (name, points, radius, material, parent = face) => mesh(name, new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points.map((p) => new THREE.Vector3(...p))), 20, radius, 8, false), material, [0, 0, 0], [1, 1, 1], [0, 0, 0], parent);
-tube("SmileL", [[0,1.30,.99],[-.05,1.20,1.0],[-.17,1.19,.97]], .018, black);
-tube("SmileR", [[0,1.30,.99],[.05,1.20,1.0],[.17,1.19,.97]], .018, black);
+tube("SmileL", [[0,1.52,.77],[-.04,1.44,.78],[-.13,1.43,.75]], .012, black);
+tube("SmileR", [[0,1.52,.77],[.04,1.44,.78],[.13,1.43,.75]], .012, black);
 [-.08, .02, .12].forEach((dy, i) => {
-  tube(`WhiskerL${i}`, [[-.48,1.26+dy,.88],[-.82,1.27+dy,.95],[-1.12,1.30+dy,.90]], .011, black);
-  tube(`WhiskerR${i}`, [[.48,1.26+dy,.88],[.82,1.27+dy,.95],[1.12,1.30+dy,.90]], .011, black);
+  tube(`WhiskerL${i}`, [[-.37,1.48+dy,.67],[-.66,1.49+dy,.73],[-.94,1.52+dy,.68]], .007, black);
+  tube(`WhiskerR${i}`, [[.37,1.48+dy,.67],[.66,1.49+dy,.73],[.94,1.52+dy,.68]], .007, black);
 });
 
-// Paws and haunches.
-sphere("HaunchL", orange, [-.63, -.50, .10], [.52, .62, .55], body);
-sphere("HaunchR", orange, [.63, -.50, .10], [.52, .62, .55], body);
-sphere("PawL", cream, [-.42, -.88, .52], [.36, .22, .44], body, 24);
-sphere("PawR", cream, [.42, -.88, .52], [.36, .22, .44], body, 24);
+// Full limbs stay outside the torso silhouette, like a seated resin figurine.
+const forelegGeo = new THREE.CapsuleGeometry(.17,.76,8,20);
+mesh("ForelegL",forelegGeo,orange,[-.39,-.22,.48],[1,1,.88],[0,0,-.04],body);
+mesh("ForelegR",forelegGeo,orange,[.39,-.22,.48],[1,1,.88],[0,0,.04],body);
+sphere("HaunchL", orange, [-.58, -.49, .02], [.34, .48, .40], body);
+sphere("HaunchR", orange, [.58, -.49, .02], [.34, .48, .40], body);
+sphere("PawL", cream, [-.39, -.79, .52], [.25, .17, .32], body, 24);
+sphere("PawR", cream, [.39, -.79, .52], [.25, .17, .32], body, 24);
 
-// Curled tail, thick and toy-like.
+// A slim, naturally curved tail that does not curl back into a ring.
 const tailCurve = new THREE.CatmullRomCurve3([
-  new THREE.Vector3(.67,-.33,-.16), new THREE.Vector3(1.12,-.20,-.12),
-  new THREE.Vector3(1.32,.25,.02), new THREE.Vector3(1.28,.73,.14),
-  new THREE.Vector3(1.08,.98,.28), new THREE.Vector3(.98,.75,.36),
+  new THREE.Vector3(.55,-.55,-.15), new THREE.Vector3(.91,-.52,-.12),
+  new THREE.Vector3(1.20,-.28,-.05), new THREE.Vector3(1.36,.10,.04),
+  new THREE.Vector3(1.43,.48,.10), new THREE.Vector3(1.35,.76,.16),
 ]);
-mesh("TailShell", new THREE.TubeGeometry(tailCurve, 48, .23, 16, false), orange, [0,0,0], [1,1,1], [0,0,0], tail);
+mesh("TailShell", new THREE.TubeGeometry(tailCurve, 48, .14, 16, false), orange, [0,0,0], [1,1,1], [0,0,0], tail);
 
 // Soft graphic stripes as shallow rounded forms.
-[-.34,0,.34].forEach((x, i) => sphere(`ForeheadStripe${i}`, stripe, [x, 1.97 - Math.abs(x)*.16, .80], [.10, .28 - i*.015, .035], face, 16));
-[-.52,.52].forEach((x, side) => [-.02,.35].forEach((yy, i) => sphere(`BodyStripe${side}_${i}`, stripe, [x, yy, .57], [.20, .075, .035], body, 16)));
+[-.25,0,.25].forEach((x, i) => sphere(`ForeheadStripe${i}`, stripe, [x, 2.01 - Math.abs(x)*.13, .63], [.065, .20 - i*.008, .025], face, 16));
+[-.43,.43].forEach((x, side) => [-.08,.27].forEach((yy, i) => sphere(`BodyStripe${side}_${i}`, stripe, [x, yy, .50], [.14, .052, .025], body, 16)));
+[-.39,.39].forEach((x,side)=>[.08,.38].forEach((yy,i)=>sphere(`LegStripe${side}_${i}`,stripe,[x,yy,.63],[.13,.045,.022],body,16)));
 
 // Match the production camera contract: about 3.1 world units tall, feet near y=-0.875.
-root.scale.setScalar(.82);
-root.position.y = .04;
+root.scale.setScalar(.86);
+root.position.y = .02;
 
 const times = [0, .7, 1.4, 2.1, 2.8];
 const vecTrack = (node, prop, values, name) => new THREE.VectorKeyframeTrack(`${node.name}.${prop}`, times, values, THREE.InterpolateSmooth);
@@ -106,8 +110,8 @@ const idleBreathe = clip("idle_breathe", 2.8, [
   vecTrack(head, "position", [0,0,0, 0,.025,0, 0,.04,0, 0,.02,0, 0,0,0]),
 ]);
 const idleBlink = clip("idle_blink", 2.8, [
-  new THREE.VectorKeyframeTrack(`${eyeL.name}.scale`, [0,1.35,1.48,1.61,2.8], [.26,.31,.12, .26,.31,.12, .26,.025,.12, .26,.31,.12, .26,.31,.12]),
-  new THREE.VectorKeyframeTrack(`${eyeR.name}.scale`, [0,1.35,1.48,1.61,2.8], [.26,.31,.12, .26,.31,.12, .26,.025,.12, .26,.31,.12, .26,.31,.12]),
+  new THREE.VectorKeyframeTrack(`${eyeL.name}.scale`, [0,1.35,1.48,1.61,2.8], [.19,.24,.095, .19,.24,.095, .19,.02,.095, .19,.24,.095, .19,.24,.095]),
+  new THREE.VectorKeyframeTrack(`${eyeR.name}.scale`, [0,1.35,1.48,1.61,2.8], [.19,.24,.095, .19,.24,.095, .19,.02,.095, .19,.24,.095, .19,.24,.095]),
 ]);
 const idleTail = clip("idle_tail", 2.8, [
   new THREE.QuaternionKeyframeTrack(`${tail.name}.quaternion`, times, quatValues([[0,0,-.05],[.03,.08,.06],[0,0,-.04],[-.02,-.06,.05],[0,0,-.05]])),
@@ -128,5 +132,5 @@ const output = await exporter.parseAsync(root, {
   onlyVisible: true,
   trs: true,
 });
-fs.writeFileSync(new URL("../public/pets3d/01-a.glb", import.meta.url), Buffer.from(output));
-console.log(`wrote public/pets3d/01-a.glb (${output.byteLength} bytes)`);
+fs.writeFileSync(new URL("../public/pets3d/01.glb", import.meta.url), Buffer.from(output));
+console.log(`wrote public/pets3d/01.glb (${output.byteLength} bytes)`);
