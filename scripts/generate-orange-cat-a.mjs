@@ -10,18 +10,18 @@ if (!globalThis.FileReader) {
 }
 
 const root = new THREE.Group();
-root.name = "MoodTreeOrangeCatA";
+root.name = "MoodTreeOrangeCatSelectedCartoon";
 
-const mat = (name, color, roughness = .86) => new THREE.MeshStandardMaterial({
-  name, color, roughness, metalness: 0,
+const mat = (name, color, roughness = .3) => new THREE.MeshPhysicalMaterial({
+  name, color, roughness, metalness: 0, clearcoat: .42, clearcoatRoughness: .2,
 });
-const orange = mat("matte resin orange", 0xf2a04f, .76);
-const stripe = mat("tangerine tiger stripes", 0xd96f32, .78);
-const cream = mat("ivory chest and paws", 0xffeccb, .8);
-const pink = mat("blush pink", 0xf4a8a5);
-const green = mat("deep sage green eyes", 0x366e5b, .72);
-const black = mat("soft charcoal", 0x3b3a37, .76);
-const white = mat("eye highlights", 0xffffff, .65);
+const orange = mat("warm orange resin", 0xf2a34a, .34);
+const stripe = mat("soft orange tabby stripes", 0xd8782f, .4);
+const cream = mat("warm ivory muzzle chest and paws", 0xffedcf, .4);
+const pink = mat("soft pink inner ears", 0xee9c9b, .3);
+const iris = mat("warm amber brown eyes", 0x8e4d19, .16);
+const black = mat("espresso details", 0x241a17, .3);
+const white = mat("eye catchlights", 0xffffff, .12);
 
 const mesh = (name, geometry, material, position, scale = [1, 1, 1], rotation = [0, 0, 0], parent = root) => {
   const value = new THREE.Mesh(geometry, material);
@@ -42,62 +42,71 @@ const head = new THREE.Group(); head.name = "Head"; root.add(head);
 const face = new THREE.Group(); face.name = "Face"; head.add(face);
 const tail = new THREE.Group(); tail.name = "Tail"; root.add(tail);
 
-sphere("BodyShell", orange, [0, .16, 0], [.67, 1.17, .54], body);
-sphere("ChestBib", cream, [0, .26, .51], [.34, .72, .07], body, 24);
-sphere("HeadShell", orange, [0, 1.67, .03], [.80, .70, .67], head);
-sphere("Muzzle", cream, [0, 1.52, .61], [.45, .28, .13], face, 24);
+// Selected cartoon language: large rounded head directly joined to a compact pear body.
+sphere("BodyShell", orange, [0, .12, 0], [.61, .86, .50], body);
+sphere("ShoulderShell", orange, [0, .68, .01], [.53, .49, .46], body);
+sphere("ChestBib", cream, [0, .19, .49], [.33, .60, .05], body, 32);
+sphere("HeadShell", orange, [0, 1.38, .025], [.74, .68, .61], head);
+sphere("CheekShellL", orange, [-.40,1.26,.35], [.39,.34,.30], head, 32);
+sphere("CheekShellR", orange, [.40,1.26,.35], [.39,.34,.30], head, 32);
+sphere("MuzzleL", cream, [-.17, 1.20, .59], [.31, .23, .12], face, 32);
+sphere("MuzzleR", cream, [.17, 1.20, .59], [.31, .23, .12], face, 32);
 
 // Rounded ears built from softened cones.
-const earGeo = new THREE.ConeGeometry(.31, .64, 32, 4);
-mesh("EarL", earGeo, orange, [-.49, 2.25, .02], [.92, 1, .72], [0, 0, -.12], head);
-mesh("EarR", earGeo, orange, [.49, 2.25, .02], [.92, 1, .72], [0, 0, .12], head);
-const innerGeo = new THREE.ConeGeometry(.18, .40, 32, 2);
-mesh("EarInnerL", innerGeo, pink, [-.49, 2.25, .18], [.84, .86, .35], [0, 0, -.12], head);
-mesh("EarInnerR", innerGeo, pink, [.49, 2.25, .18], [.84, .86, .35], [0, 0, .12], head);
+const earGeo = new THREE.ConeGeometry(.27, .58, 32, 4);
+mesh("EarL", earGeo, orange, [-.45, 2.00, .015], [.95, 1, .72], [0, 0, -.08], head);
+mesh("EarR", earGeo, orange, [.45, 2.00, .015], [.95, 1, .72], [0, 0, .08], head);
+const innerGeo = new THREE.ConeGeometry(.17, .39, 32, 3);
+mesh("EarInnerL", innerGeo, pink, [-.45, 2.00, .15], [.82, .84, .30], [0, 0, -.08], head);
+mesh("EarInnerR", innerGeo, pink, [.45, 2.00, .15], [.82, .84, .30], [0, 0, .08], head);
 
-const eyeL = sphere("EyeL", green, [-.28, 1.74, .61], [.19, .24, .095], face, 32);
-const eyeR = sphere("EyeR", green, [.28, 1.74, .61], [.19, .24, .095], face, 32);
-sphere("PupilL", black, [-.28, 1.75, .70], [.085, .14, .035], face, 20);
-sphere("PupilR", black, [.28, 1.75, .70], [.085, .14, .035], face, 20);
-sphere("HighlightL", white, [-.33, 1.84, .735], [.042, .052, .018], face, 16);
-sphere("HighlightR", white, [.23, 1.84, .735], [.042, .052, .018], face, 16);
-sphere("CheekL", pink, [-.48, 1.48, .64], [.15, .085, .04], face, 20);
-sphere("CheekR", pink, [.48, 1.48, .64], [.15, .085, .04], face, 20);
-sphere("Nose", pink, [0, 1.56, .75], [.075, .055, .045], face, 20);
+// Large friendly round amber eyes from the approved illustration.
+const eyeL = sphere("EyeL", white, [-.255, 1.48, .565], [.225, .265, .055], face, 40);
+const eyeR = sphere("EyeR", white, [.255, 1.48, .565], [.225, .265, .055], face, 40);
+sphere("IrisL", iris, [-.255, 1.47, .615], [.145, .18, .035], face, 32);
+sphere("IrisR", iris, [.255, 1.47, .615], [.145, .18, .035], face, 32);
+sphere("PupilL", black, [-.255, 1.47, .646], [.082, .115, .018], face, 24);
+sphere("PupilR", black, [.255, 1.47, .646], [.082, .115, .018], face, 24);
+sphere("HighlightL", white, [-.30, 1.56, .665], [.048, .055, .012], face, 16);
+sphere("HighlightR", white, [.21, 1.56, .665], [.048, .055, .012], face, 16);
+sphere("Nose", pink, [0, 1.24, .735], [.065, .052, .040], face, 24);
 
 // Smile and whiskers use rounded tubes.
 const tube = (name, points, radius, material, parent = face) => mesh(name, new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points.map((p) => new THREE.Vector3(...p))), 20, radius, 8, false), material, [0, 0, 0], [1, 1, 1], [0, 0, 0], parent);
-tube("SmileL", [[0,1.52,.77],[-.04,1.44,.78],[-.13,1.43,.75]], .012, black);
-tube("SmileR", [[0,1.52,.77],[.04,1.44,.78],[.13,1.43,.75]], .012, black);
+tube("SmileL", [[0,1.20,.75],[-.045,1.12,.755],[-.14,1.10,.72]], .011, black);
+tube("SmileR", [[0,1.20,.75],[.045,1.12,.755],[.14,1.10,.72]], .011, black);
 [-.08, .02, .12].forEach((dy, i) => {
-  tube(`WhiskerL${i}`, [[-.37,1.48+dy,.67],[-.66,1.49+dy,.73],[-.94,1.52+dy,.68]], .007, black);
-  tube(`WhiskerR${i}`, [[.37,1.48+dy,.67],[.66,1.49+dy,.73],[.94,1.52+dy,.68]], .007, black);
+  tube(`WhiskerL${i}`, [[-.34,1.16+dy,.62],[-.62,1.17+dy,.68],[-.88,1.20+dy,.63]], .0045, black);
+  tube(`WhiskerR${i}`, [[.34,1.16+dy,.62],[.62,1.17+dy,.68],[.88,1.20+dy,.63]], .0045, black);
 });
 
 // Full limbs stay outside the torso silhouette, like a seated resin figurine.
-const forelegGeo = new THREE.CapsuleGeometry(.17,.76,8,20);
-mesh("ForelegL",forelegGeo,orange,[-.39,-.22,.48],[1,1,.88],[0,0,-.04],body);
-mesh("ForelegR",forelegGeo,orange,[.39,-.22,.48],[1,1,.88],[0,0,.04],body);
-sphere("HaunchL", orange, [-.58, -.49, .02], [.34, .48, .40], body);
-sphere("HaunchR", orange, [.58, -.49, .02], [.34, .48, .40], body);
-sphere("PawL", cream, [-.39, -.79, .52], [.25, .17, .32], body, 24);
-sphere("PawR", cream, [.39, -.79, .52], [.25, .17, .32], body, 24);
+const forelegGeo = new THREE.CapsuleGeometry(.15,.55,10,24);
+mesh("ForelegL",forelegGeo,orange,[-.31,-.20,.43],[1,1,.88],[0,0,-.02],body);
+mesh("ForelegR",forelegGeo,orange,[.31,-.20,.43],[1,1,.88],[0,0,.02],body);
+sphere("HaunchL", orange, [-.50, -.43, -.01], [.31, .40, .36], body, 32);
+sphere("HaunchR", orange, [.50, -.43, -.01], [.31, .40, .36], body, 32);
+sphere("PawL", cream, [-.31, -.70, .47], [.23, .15, .29], body, 32);
+sphere("PawR", cream, [.31, -.70, .47], [.23, .15, .29], body, 32);
+sphere("RearPawL", cream, [-.51, -.68, .28], [.20, .13, .26], body, 28);
+sphere("RearPawR", cream, [.51, -.68, .28], [.20, .13, .26], body, 28);
 
 // A slim, naturally curved tail that does not curl back into a ring.
 const tailCurve = new THREE.CatmullRomCurve3([
-  new THREE.Vector3(.55,-.55,-.15), new THREE.Vector3(.91,-.52,-.12),
-  new THREE.Vector3(1.20,-.28,-.05), new THREE.Vector3(1.36,.10,.04),
-  new THREE.Vector3(1.43,.48,.10), new THREE.Vector3(1.35,.76,.16),
+  new THREE.Vector3(.50,-.55,-.12), new THREE.Vector3(.78,-.60,-.08),
+  new THREE.Vector3(.98,-.43,-.02), new THREE.Vector3(1.06,-.12,.04),
+  new THREE.Vector3(1.04,.20,.09), new THREE.Vector3(.96,.47,.14),
 ]);
-mesh("TailShell", new THREE.TubeGeometry(tailCurve, 48, .14, 16, false), orange, [0,0,0], [1,1,1], [0,0,0], tail);
+mesh("TailShell", new THREE.TubeGeometry(tailCurve, 56, .14, 20, false), orange, [0,0,0], [1,1,1], [0,0,0], tail);
 
 // Soft graphic stripes as shallow rounded forms.
-[-.25,0,.25].forEach((x, i) => sphere(`ForeheadStripe${i}`, stripe, [x, 2.01 - Math.abs(x)*.13, .63], [.065, .20 - i*.008, .025], face, 16));
-[-.43,.43].forEach((x, side) => [-.08,.27].forEach((yy, i) => sphere(`BodyStripe${side}_${i}`, stripe, [x, yy, .50], [.14, .052, .025], body, 16)));
-[-.39,.39].forEach((x,side)=>[.08,.38].forEach((yy,i)=>sphere(`LegStripe${side}_${i}`,stripe,[x,yy,.63],[.13,.045,.022],body,16)));
+[-.20,0,.20].forEach((x, i) => sphere(`ForeheadStripe${i}`, stripe, [x, 1.82 - Math.abs(x)*.12, .585], [.045, .16 - Math.abs(i-1)*.012, .014], face, 20));
+[-.52,.52].forEach((x, side) => [-.02,.28,.52].forEach((yy, i) => sphere(`BodyStripe${side}_${i}`, stripe, [x, yy, .43], [.12, .040, .016], body, 20)));
+[-.31,.31].forEach((x,side)=>[-.12,.17].forEach((yy,i)=>sphere(`LegStripe${side}_${i}`,stripe,[x,yy,.565],[.11,.035,.014],body,20)));
+[.70,.88,1.04].forEach((x,i)=>sphere(`TailStripe${i}`,stripe,[x,-.55+i*.14,-.045+i*.055],[.10,.035,.10],tail,18));
 
 // Match the production camera contract: about 3.1 world units tall, feet near y=-0.875.
-root.scale.setScalar(.86);
+root.scale.setScalar(.92);
 root.position.y = .02;
 
 const times = [0, .7, 1.4, 2.1, 2.8];
@@ -132,5 +141,6 @@ const output = await exporter.parseAsync(root, {
   onlyVisible: true,
   trs: true,
 });
-fs.writeFileSync(new URL("../public/pets3d/01.glb", import.meta.url), Buffer.from(output));
-console.log(`wrote public/pets3d/01.glb (${output.byteLength} bytes)`);
+const outputPath = process.argv[2] || new URL("../public/pets3d/01.glb", import.meta.url);
+fs.writeFileSync(outputPath, Buffer.from(output));
+console.log(`wrote ${outputPath} (${output.byteLength} bytes)`);
