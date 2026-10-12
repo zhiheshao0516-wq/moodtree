@@ -188,6 +188,9 @@ def ai_chat_handler(body):
         system_prompt = AI_CHAT_PROMPT_NIGHT
     else:
         system_prompt = AI_CHAT_PROMPT
+    memory_context, memory_pet_id, memory_pet_name = _pet_memory_context(body.get('userId', ''), body.get('petId', ''))
+    if memory_context:
+        system_prompt += f'\n\n【{memory_pet_name or "小伙伴"}记得的事】\n{memory_context}'
     msgs = [{'role': 'system', 'content': system_prompt}]
     if body.get('history'):
         # Chat page format: {history: [{role, content}]}
@@ -217,6 +220,8 @@ def ai_chat_handler(body):
                     break
         fallback = _ai_fallback(user_msg)
         return {'reply': fallback, 'fallback': True}
+    user_text = next((m.get('content', '') for m in reversed(msgs) if m.get('role') == 'user'), '')
+    _extract_pet_memories(body.get('userId', ''), memory_pet_id, user_text)
     return {'reply': reply}
 
 # ===== Reputation / auto-ban system =====
@@ -1543,6 +1548,173 @@ def _pet_result(box):
     return result
 
 
+# ===== pet memory library (v3 additive storage; pets v2 remains unchanged) =====
+PET_MEMORY_KINDS = {'fact', 'event', 'preference', 'emotionpattern'}
+PET_MEMORY_SOURCES = {'chat', 'mood', 'manual'}
+PET_MEMORY_LIMIT = 200
+
+def _memory_now():
+    return int(time.time())
+
+def _memory_rows(data):
+    rows = data.setdefault('pet_memories', [])
+    return rows if isinstance(rows, list) else []
+
+def _memory_pet(data, user_id, requested=''):
+    box, _ = _pet_box(data, user_id)
+    pet_id = str(requested or box.get('active_id') or '')
+    pet = next((p for p in box.get('items', []) if str(p.get('id')) == pet_id), None)
+    return pet_id, pet
+
+def _memory_public(row):
+    return {k: row.get(k) for k in ('id', 'petid', 'kind', 'content', 'source', 'weight', 'pinned', 'status', 'createdat', 'updatedat', 'lastused_at', 'deletedat')}
+
+def _memory_normalize(text):
+    return re.sub(r'[\s，。！？、,.!?;；:："“”\'‘’]+', '', str(text or '')).lower()
+
+def _memory_prune(data, user_id):
+    rows = _memory_rows(data)
+    active = [r for r in rows if r.get('userid') == user_id and r.get('status', 'active') == 'active']
+    if len(active) <= PET_MEMORY_LIMIT:
+        return
+    active.sort(key=lambda r: (bool(r.get('pinned')), float(r.get('weight', 0)), int(r.get('lastused_at') or r.get('updatedat') or 0)), reverse=True)
+    keep = {r.get('id') for r in active[:PET_MEMORY_LIMIT]}
+    now = _memory_now()
+    for row in active:
+        if row.get('id') not in keep:
+            row['status'] = 'deleted'
+            row['deletedat'] = now
+            row['updatedat'] = now
+
+def _memory_upsert(data, user_id, pet_id, content, kind='fact', source='chat', weight=.55, pinned=False):
+    content = re.sub(r'\s+', ' ', str(content or '')).strip()[:240]
+    if len(content) < 2:
+        return None
+    kind = kind if kind in PET_MEMORY_KINDS else 'fact'
+    source = source if source in PET_MEMORY_SOURCES else 'chat'
+    norm = _memory_normalize(content)
+    rows = _memory_rows(data)
+    candidates = [r for r in rows if r.get('userid') == user_id and r.get('petid') == pet_id and r.get('status', 'active') == 'active']
+    old = next((r for r in candidates if _memory_normalize(r.get('content')) == norm), None)
+    if not old:
+        # Conservative semantic merge for near-identical Chinese facts.
+        old = next((r for r in candidates if norm and (_memory_normalize(r.get('content')) in norm or norm in _memory_normalize(r.get('content'))) and min(len(norm), len(_memory_normalize(r.get('content')))) >= 5), None)
+    now = _memory_now()
+    if old:
+        old.update({'content': content, 'kind': kind, 'source': source, 'weight': max(float(old.get('weight', 0)), max(0, min(1, float(weight)))), 'updatedat': now})
+        return old
+    row = {'id': f'mem_{int(time.time()*1000)}_{random.randint(100,999)}', 'userid': user_id, 'petid': pet_id,
+           'kind': kind, 'content': content, 'source': source, 'weight': max(0, min(1, float(weight))),
+           'pinned': bool(pinned), 'status': 'active', 'createdat': now, 'updatedat': now, 'lastused_at': 0}
+    rows.append(row)
+    _memory_prune(data, user_id)
+    return row
+
+def pets_memory_list(qp, user_id):
+    data = read_data()
+    pet_id, pet = _memory_pet(data, user_id, qp.get('petid', ''))
+    if not pet:
+        return {'ok': False, 'error': '宠物不存在'}
+    include_deleted = qp.get('status') == 'deleted'
+    rows = [r for r in _memory_rows(data) if r.get('userid') == user_id and r.get('petid') == pet_id and (r.get('status', 'active') == ('deleted' if include_deleted else 'active'))]
+    kind = qp.get('kind', '')
+    if kind in PET_MEMORY_KINDS:
+        rows = [r for r in rows if r.get('kind') == kind]
+    rows.sort(key=lambda r: (bool(r.get('pinned')), float(r.get('weight', 0)), int(r.get('updatedat') or 0)), reverse=True)
+    try: limit = max(1, min(200, int(qp.get('limit', 50))))
+    except Exception: limit = 50
+    try: offset = max(0, int(qp.get('offset', 0)))
+    except Exception: offset = 0
+    return {'ok': True, 'petId': pet_id, 'petName': pet.get('pet_name', ''), 'total': len(rows), 'memories': [_memory_public(r) for r in rows[offset:offset + limit]]}
+
+def pets_memory_create(body, user_id):
+    data = read_data()
+    pet_id, pet = _memory_pet(data, user_id, body.get('petId', ''))
+    if not pet:
+        return {'ok': False, 'error': '宠物不存在'}
+    row = _memory_upsert(data, user_id, pet_id, body.get('content', ''), body.get('kind', 'fact'), 'manual', body.get('weight', .8), body.get('pinned', False))
+    if not row:
+        return {'ok': False, 'error': '记忆内容不能为空'}
+    write_data(data)
+    return {'ok': True, 'memory': _memory_public(row)}
+
+def pets_memory_update(memory_id, body, user_id):
+    data = read_data()
+    row = next((r for r in _memory_rows(data) if r.get('id') == memory_id and r.get('userid') == user_id), None)
+    if not row:
+        return {'ok': False, 'error': '记忆不存在或无权操作'}
+    if row.get('status') == 'deleted' and body.get('status') == 'active':
+        if _memory_now() - int(row.get('deletedat') or 0) > 7 * 86400:
+            return {'ok': False, 'error': '该记忆已超过可恢复时间'}
+        row['status'] = 'active'; row.pop('deletedat', None)
+    if 'content' in body:
+        content = re.sub(r'\s+', ' ', str(body.get('content') or '')).strip()[:240]
+        if not content: return {'ok': False, 'error': '记忆内容不能为空'}
+        row['content'] = content
+    if body.get('kind') in PET_MEMORY_KINDS: row['kind'] = body['kind']
+    if 'pinned' in body: row['pinned'] = bool(body.get('pinned'))
+    if 'weight' in body:
+        try: row['weight'] = max(0, min(1, float(body['weight'])))
+        except Exception: pass
+    row['updatedat'] = _memory_now()
+    _memory_prune(data, user_id)
+    write_data(data)
+    return {'ok': True, 'memory': _memory_public(row)}
+
+def pets_memory_delete(memory_id, body, user_id):
+    data = read_data(); now = _memory_now()
+    if body.get('clearAll'):
+        pet_id, pet = _memory_pet(data, user_id, body.get('petId', ''))
+        if not pet: return {'ok': False, 'error': '宠物不存在'}
+        changed = 0
+        for row in _memory_rows(data):
+            if row.get('userid') == user_id and row.get('petid') == pet_id and row.get('status', 'active') == 'active':
+                row.update({'status': 'deleted', 'deletedat': now, 'updatedat': now}); changed += 1
+        write_data(data); return {'ok': True, 'deleted': changed}
+    row = next((r for r in _memory_rows(data) if r.get('id') == memory_id and r.get('userid') == user_id), None)
+    if not row: return {'ok': False, 'error': '记忆不存在或无权操作'}
+    row.update({'status': 'deleted', 'deletedat': now, 'updatedat': now})
+    write_data(data)
+    return {'ok': True}
+
+def _pet_memory_context(user_id, requested_pet=''):
+    if not user_id: return '', '', ''
+    data = read_data(); pet_id, pet = _memory_pet(data, user_id, requested_pet)
+    if not pet: return '', '', ''
+    rows = [r for r in _memory_rows(data) if r.get('userid') == user_id and r.get('petid') == pet_id and r.get('status', 'active') == 'active']
+    rows.sort(key=lambda r: (bool(r.get('pinned')), float(r.get('weight', 0)), int(r.get('lastused_at') or r.get('updatedat') or 0)), reverse=True)
+    top = rows[:10]
+    if not top: return '', pet_id, pet.get('pet_name', '')
+    labels = {'fact': '事实', 'event': '经历', 'preference': '偏好', 'emotionpattern': '情绪规律'}
+    context = '\n'.join(f"- [{labels.get(r.get('kind'), '记忆')}] {r.get('content', '')[:180]}" for r in top)
+    return '你记得用户主动告诉过你的这些事。仅在自然相关时使用，不要逐条复述，也不要声称监视用户：\n' + context, pet_id, pet.get('pet_name', '')
+
+def _memory_ai_quota(data, user_id):
+    today = _cst_today(); usage = data.setdefault('pet_memory_ai_usage', {})
+    row = usage.setdefault(user_id, {'date': today, 'count': 0})
+    if row.get('date') != today: row.update({'date': today, 'count': 0})
+    if int(row.get('count', 0)) >= 30: return False
+    row['count'] = int(row.get('count', 0)) + 1
+    return True
+
+def _extract_pet_memories(user_id, pet_id, user_text):
+    text = str(user_text or '').strip()
+    if not user_id or not pet_id or len(text) < 4: return
+    data = read_data()
+    if not _memory_ai_quota(data, user_id):
+        write_data(data); return
+    prompt = ('从用户这句话中提取0到2条未来聊天真正有帮助的长期记忆。不要保存密码、联系方式、身份证、住址等敏感信息，也不要保存寒暄。'
+              '只输出JSON数组，每项为{"kind":"fact|event|preference|emotionpattern","content":"简洁中文事实","weight":0到1}。没有则输出[]。')
+    raw = llm_call([{'role': 'system', 'content': prompt}, {'role': 'user', 'content': text[:1800]}], max_tokens=180, temperature=.1, timeout=10)
+    try:
+        match = re.search(r'\[.*\]', raw or '', re.S); items = json.loads(match.group(0)) if match else []
+        for item in items[:2]:
+            if isinstance(item, dict): _memory_upsert(data, user_id, pet_id, item.get('content'), item.get('kind', 'fact'), 'chat', item.get('weight', .55))
+    except Exception:
+        pass
+    write_data(data)
+
+
 # ===== mood records / tags / achievements (merged from codex cf4b50d 2026-10-05) =====
 MOOD_NAMES = {5: '很好', 4: '好', 3: '一般', 2: '差', 1: '很差'}
 ACHIEVEMENT_RULES = {
@@ -1789,6 +1961,8 @@ def pets_feed(body, user_id):
     num, name, _, _ = _pet_level_of(exp)
     pet.update({'exp': exp, 'level': num, 'level_name': name, 'streak': streak,
                 'fed_date': today, 'last_mood': str(body.get('mood') or '')[:10]})
+    mood_label = {'happy': '开心', 'calm': '平静', 'sad': '难过', 'tired': '疲惫'}.get(str(body.get('mood') or ''), '有些复杂')
+    _memory_upsert(data, user_id, pet['id'], f'最近一次心情记录是{mood_label}', 'emotionpattern', 'mood', .45)
     box['active_id'] = pet['id']
     box['mood_reward_date'] = today
     box['mood_reward_pet_id'] = pet['id']
@@ -3038,6 +3212,16 @@ def main_handler(event, context):
             result = pets_main(req, req.get('userId', ''))
         elif path == '/api/pets/interact' and method == 'POST':
             result = pets_interact(req, req.get('userId', ''))
+        elif path == '/api/pets/memory' and method == 'GET':
+            result = pets_memory_list(qp, _auth_uid or '')
+        elif path == '/api/pets/memory' and method == 'POST':
+            result = pets_memory_create(req, _auth_uid or '')
+        elif path == '/api/pets/memory' and method == 'DELETE':
+            result = pets_memory_delete('', req, _auth_uid or '')
+        elif re.match(r'^/api/pets/memory/[^/]+$', path) and method == 'PUT':
+            result = pets_memory_update(path.rstrip('/').split('/')[-1], req, _auth_uid or '')
+        elif re.match(r'^/api/pets/memory/[^/]+$', path) and method == 'DELETE':
+            result = pets_memory_delete(path.rstrip('/').split('/')[-1], req, _auth_uid or '')
         elif path == '/api/chat/read' and method == 'POST':
             result = mark_read(req)
         elif path == '/api/chat/unread' and method == 'GET':
