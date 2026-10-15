@@ -1,6 +1,6 @@
 import fs from "node:fs";
 
-const [, , inputPath, outputPath] = process.argv;
+const [, , inputPath, outputPath, ...options] = process.argv;
 if (!inputPath || !outputPath) {
   throw new Error("Usage: node attach-pet-root-animations.mjs input.glb output.glb");
 }
@@ -20,8 +20,20 @@ const rootIndex = json.scenes[json.scene || 0].nodes[0];
 const root = json.nodes[rootIndex];
 if (root.matrix) throw new Error("Matrix-only root is not supported by this batch script.");
 const baseTranslation = [...(root.translation || [0, 0, 0])];
-const baseRotation = [...(root.rotation || [0, 0, 0, 1])];
+let baseRotation = [...(root.rotation || [0, 0, 0, 1])];
 const baseScale = [...(root.scale || [1, 1, 1])];
+const rotateIndex = options.indexOf("--rotate-y");
+if (rotateIndex >= 0) {
+  const degrees = Number(options[rotateIndex + 1] || 0);
+  const radians = degrees * Math.PI / 180;
+  const correction = [0, Math.sin(radians / 2), 0, Math.cos(radians / 2)];
+  baseRotation = [
+    baseRotation[3] * correction[0] + baseRotation[0] * correction[3] + baseRotation[1] * correction[2] - baseRotation[2] * correction[1],
+    baseRotation[3] * correction[1] - baseRotation[0] * correction[2] + baseRotation[1] * correction[3] + baseRotation[2] * correction[0],
+    baseRotation[3] * correction[2] + baseRotation[0] * correction[1] - baseRotation[1] * correction[0] + baseRotation[2] * correction[3],
+    baseRotation[3] * correction[3] - baseRotation[0] * correction[0] - baseRotation[1] * correction[1] - baseRotation[2] * correction[2],
+  ];
+}
 root.translation = baseTranslation;
 root.rotation = baseRotation;
 root.scale = baseScale;
@@ -66,23 +78,29 @@ const addAnimation = (name, tracks) => {
   json.animations.push(animation);
 };
 
+const waveTimes = Array.from({ length: 13 }, (_, index) => index * 0.25);
+const breatheScale = waveTimes.map((time) => scaled(1 + 0.032 * (0.5 - 0.5 * Math.cos(time / 3 * Math.PI * 2))));
+const breatheMove = waveTimes.map((time) => moved(0.012 * (0.5 - 0.5 * Math.cos(time / 3 * Math.PI * 2))));
+const tailTimes = Array.from({ length: 13 }, (_, index) => index * 0.25);
+const tailRotation = tailTimes.map((time) => rotateY(0.065 * Math.sin(time / 3 * Math.PI * 2)));
+
 addAnimation("idle_breathe", [
-  { path: "scale", times: [0, 1.4, 2.8], values: [scaled(1), scaled(1.022), scaled(1)] },
-  { path: "translation", times: [0, 1.4, 2.8], values: [moved(0), moved(0.006), moved(0)] },
+  { path: "scale", times: waveTimes, values: breatheScale },
+  { path: "translation", times: waveTimes, values: breatheMove },
 ]);
 addAnimation("idle_blink", [
-  { path: "scale", times: [0, 0.08, 0.16, 2.8], values: [scaled(1), [baseScale[0], baseScale[1] * 0.992, baseScale[2]], scaled(1), scaled(1)], interpolation: "STEP" },
+  { path: "scale", times: [0, 0.07, 0.14, 0.22, 2.8, 2.9, 3], values: [scaled(1), [baseScale[0], baseScale[1] * 0.986, baseScale[2]], [baseScale[0], baseScale[1] * 0.978, baseScale[2]], scaled(1), scaled(1), scaled(1), scaled(1)] },
 ]);
 addAnimation("idle_tail", [
-  { path: "rotation", times: [0, 1, 2], values: [rotateY(-0.025), rotateY(0.025), rotateY(-0.025)] },
+  { path: "rotation", times: tailTimes, values: tailRotation },
 ]);
 addAnimation("touch_happy", [
-  { path: "translation", times: [0, 0.22, 0.48, 0.8], values: [moved(0), moved(0.045), moved(0.012), moved(0)] },
-  { path: "rotation", times: [0, 0.22, 0.48, 0.8], values: [baseRotation, rotateZ(-0.045), rotateZ(0.035), baseRotation] },
-  { path: "scale", times: [0, 0.22, 0.48, 0.8], values: [scaled(1), scaled(1.025), scaled(1.008), scaled(1)] },
+  { path: "translation", times: [0, 0.1, 0.2, 0.32, 0.46, 0.6, 0.76, 0.92], values: [moved(0), moved(0.02), moved(0.07), moved(0.11), moved(0.065), moved(0.025), moved(0.008), moved(0)] },
+  { path: "rotation", times: [0, 0.1, 0.2, 0.32, 0.46, 0.6, 0.76, 0.92], values: [baseRotation, rotateZ(-0.025), rotateZ(-0.065), rotateZ(0.04), rotateZ(0.065), rotateZ(-0.025), rotateZ(-0.012), baseRotation] },
+  { path: "scale", times: [0, 0.1, 0.2, 0.32, 0.46, 0.6, 0.76, 0.92], values: [scaled(1), scaled(1.018), scaled(1.04), scaled(1.055), scaled(1.035), scaled(1.018), scaled(1.006), scaled(1)] },
 ]);
 addAnimation("look_follow", [
-  { path: "rotation", times: [0, 0.8, 1.6, 2.4], values: [rotateY(-0.055), rotateY(0.055), rotateY(0.02), rotateY(-0.055)] },
+  { path: "rotation", times: [0, 0.3, 0.6, 0.9, 1.2, 1.5, 1.8, 2.1, 2.4], values: [rotateY(-0.055), rotateY(-0.035), rotateY(0), rotateY(0.045), rotateY(0.065), rotateY(0.04), rotateY(0), rotateY(-0.04), rotateY(-0.055)] },
 ]);
 
 json.buffers[0].byteLength = binary.length;
