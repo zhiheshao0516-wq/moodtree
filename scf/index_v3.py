@@ -174,13 +174,67 @@ AI_CHAT_PROMPT = (
     '- 禁止"还有什么想说的吗"式客服收尾\n'
     '【唯一例外】\n'
     '- 用户流露自伤、轻生倾向时：放下朋友人设，认真地、简短地建议联系专业帮助（可提全国24小时心理援助热线），语气恳切不慌张\n'
-    '注意：安全兜底逻辑必须保留，只换表达风格。'
+    '注意：安全兜底逻辑必须保留，只换表达风格。\n'
+    '【危机处理规则（最高优先级）】\n'
+    '- 若用户表达自伤、自杀念头或询问伤害自己的方法：绝不提供任何方法、工具或“无痛”等信息，绝不评价其想法的对错，不承诺保密；\n'
+    '- 必须温和、直接地建议其立即联系 12356（全国心理援助热线）、120，或告知信任的人；\n'
+    '- 语气要像朋友，不说教、不冷漠、不使用“请勿”等命令式表达。'
 )
 AI_CHAT_PROMPT_DAY = AI_CHAT_PROMPT
 AI_CHAT_PROMPT_NIGHT = AI_CHAT_PROMPT
 
-def ai_chat_handler(body):
+CRISIS_KEYWORDS = [
+    '自杀', '轻生', '不想活', '想死', '去死', '结束生命', '了结', '自残', '割腕',
+    '安眠药', '跳楼', '跳桥', '活着没意思', '消失算了', '万念俱灰', 'kill myself',
+    'suicide', 'end my life',
+]
+
+CRISIS_REPLY = (
+    '我听到了你现在的痛苦，也很担心你。我只是一个程序，没办法真正陪在你身边，'
+    '但此刻有很多真实的人想帮你：\n\n'
+    '• 全国心理援助热线：12356（24小时）\n'
+    '• 紧急情况请拨打 120 或 110\n'
+    '• 请告诉一位你信任的人：家人、朋友、老师，哪怕只说一句“我现在不太好”\n\n'
+    '你愿意的话，也可以先把此刻的感受写进树洞存起来。但请先照顾好自己，好吗？'
+)
+
+def crisis_check(user_text):
+    """Return True when user text should bypass the model and use the crisis reply."""
+    text = str(user_text or '').lower()
+    return any(keyword.lower() in text for keyword in CRISIS_KEYWORDS)
+
+def _crisis_keyword_index(user_text):
+    """Return only the matched keyword index so logs never contain sensitive user text."""
+    text = str(user_text or '').lower()
+    return next((i for i, keyword in enumerate(CRISIS_KEYWORDS) if keyword.lower() in text), -1)
+
+def _ai_user_text(body):
+    """Extract the current user-authored text from supported AI chat request formats."""
+    parts = []
+    if body.get('postTitle'):
+        parts.append(str(body.get('postTitle', '')))
+    if body.get('postContent'):
+        parts.append(str(body.get('postContent', '')))
+    if body.get('message'):
+        parts.append(str(body.get('message', '')))
+    if body.get('history'):
+        for item in reversed(body.get('history') or []):
+            if item.get('role') == 'user' and item.get('content'):
+                parts.append(str(item.get('content', '')))
+                break
+    return '\n'.join(parts)[:6000]
+
+def ai_chat_handler(body, authenticated_user_id=''):
     """AI companion chat: handles both {history} and {message, postContent} formats."""
+    user_text = _ai_user_text(body)
+    if crisis_check(user_text):
+        print(json.dumps({
+            'event': 'ai_crisis_guard',
+            'userId': authenticated_user_id or body.get('userId', '') or 'anonymous',
+            'timestamp': now_str('%Y-%m-%d %H:%M:%S'),
+            'keywordIndex': _crisis_keyword_index(user_text),
+        }, ensure_ascii=False))
+        return {'reply': CRISIS_REPLY, 'source': 'crisis_guard'}
     ai_style = body.get('aiStyle', '')
     if ai_style == 'day':
         system_prompt = AI_CHAT_PROMPT_DAY
@@ -3045,7 +3099,7 @@ def main_handler(event, context):
         elif path == '/api/chat/read-status' and method == 'GET':
             result = get_read_status(qp.get('userid', ''), qp.get('type', 'dm'), qp.get('target', ''))
         elif path == '/api/ai/chat' and method == 'POST':
-            result = ai_chat_handler(req)
+            result = ai_chat_handler(req, _auth_uid or '')
         elif path == '/api/translate/default-language' and method == 'GET':
             result = default_translation_language(request_headers)
         elif path == '/api/translate' and method == 'GET':
